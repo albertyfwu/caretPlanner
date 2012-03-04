@@ -1,34 +1,58 @@
-#header
-{
-	position:relative;
-	border-style:solid;
-	border-width:5px;
-	
-	width: 1024px;
-	margin: 0px auto;
+body {
+	font-family: helvetica, arial, verdana, sans-serif;
+	background-color:#c0deed;
 }
 
-#content
+#container
 {
 	width:1024px;
-	margin: 0px auto;
+	margin:0px auto;
+}
+
+#header
+{
+	background-color:white;	
+	border-radius:8px;
+	margin:5px;
+	padding:15px;
+}
+
+#logOut
+{
+	float:right;
+}
+
+#title
+{
+	font-size:48px;
+	font-family:arial;
 }
 
 #sidebar
 {
-	position:relative;
-	left:0;
-	width:300px;
-	border-style:solid;
-	border-width:5px;
+	width:140px;
+	height:auto;
+	float:left;
+	padding:15px;
+	border-radius:8px;
+	background-color:white;
+	margin:5px;
 }
 
-#calendar
+#content
 {
-	position:relative;
-	top:0;
-	right:0;
-	width:500px;
-	border-style:solid;
-	border-width:5px;
+	float:right;
+	border-radius:8px;
+	margin:5px;
+	padding:15px;
+	background-color:white;
+}
+
+#footer
+{
+	clear:both;
+	border-radius:8px;
+	margin:5px;
+	padding:15px;
+	background-color:white;
 }
