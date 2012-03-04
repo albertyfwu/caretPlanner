@@ -10,11 +10,13 @@ jinja_environment = jinja2.Environment(
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
+        
+        
         user = users.get_current_user()
         
         if user:        
             template_values = {
-                'name': user.nickname()
+                'username': user.nickname()
             }
             
             template = jinja_environment.get_template('index.html')
