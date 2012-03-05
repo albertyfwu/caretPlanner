@@ -4,7 +4,7 @@ html {
 
 body {
 	font-family: helvetica, arial, verdana, sans-serif;
-	background-color:#c0deed;
+	background-color:white;
 	margin:0;
 	padding:0;
 	height:100%;
@@ -17,28 +17,40 @@ body {
 
 #header-wrap {
 	top:0;
-	background-color:white;
+	background-color:#f5f5f5;
 	width:100%;
+	border-bottom-style:solid;
+	border-color:#E46C0A;
+	border-width:5px;
 }
 
 #header {
-	width:1024px;
+	width:1074px;
 	margin:0px auto;
-	padding:15px;
+	padding:10px;
 }
 
 #title {
-	font-size:48px;
+	font-size:56px;
+	font-family:"Agency FB";
+}
+
+#caret {
+	color:#E46C0A;
 }
 
 #signOut {
 	float:right;
+	background-color:#D44937;
+	padding:8px;
+	color:white;
+	font-weight:bold;
 }
 
 #inner-wrap {
 	top:80px;
 	bottom:80px;
-	width:1024px;
+	width:1074px;
 	height:630px;
 	margin:0px auto;
 	padding:15px;
@@ -46,11 +58,33 @@ body {
 
 #sidebar {
 	float:left;
-	width:200px;
+	width:250px;
 	height:600px;
 	background-color:white;
-	border-radius:8px;
+	border-radius:0px;
 	padding:15px;
+	border-right:3px solid #E46C0A;
+	border-left:3px solid #E46C0A;
+}
+
+#circlesTitle {
+	font-size:24px;
+}
+
+#circleButtons {
+	text-align:center;
+}
+
+#compareButton {
+	background-color:lightBlue;
+	padding:8px;
+	color:black;
+}
+
+#scheduleButton {
+	background-color:lightBlue;
+	padding:8px;
+	color:black;
 }
 
 #content {
@@ -64,8 +98,11 @@ body {
 
 #footer-wrap {
 	bottom:0;
-	background-color:white;
+	background-color:#f5f5f5;
 	width:100%;
+	border-top-style:solid;
+	border-color:#E46C0A;
+	border-width:5px;
 }
 
 #footer {
