@@ -8,6 +8,7 @@
 			<div id="header-wrap">
 				<div id="header">
 					<span id="title"><img src="img/logo.png" /></span>
+					<!-- span id="title"><span id="social">social</span><span id="planner">Planner</span></span>-->
 					<button id="signOut">Sign Out</button>
 				</div>
 			</div>
@@ -15,11 +16,14 @@
 			<div id="inner-wrap">
 				<div id="content">
 					<iframe src="https://www.google.com/calendar/embed?wkst=1&amp;bgcolor=%23FFFFFF&amp;src={{ username }}%40gmail.com&amp;color=%23A32929&amp"
-					style="border-width:0" width="749" height="600" frameborder="0" scrolling="no"></iframe>
+					style="border-width:0" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
 				</div>
 				
 				<div id="sidebar">
-					<span id="circlesTitle">Circles</span>
+					<div id="circlesTitleDiv">
+						<span id="circlesTitle">Circles</span>
+					</div>
+										
 					<div id="circles">
 						Friends<br />
 						Family<br />
@@ -36,7 +40,7 @@
 			
 			<div id="footer-wrap">			
 				<div id="footer">
-					<span id="copyright">Copyright caretPlanner 2012</span>
+					<span id="copyright">Copyright socialPlanner 2012</span>
 				</div>
 			</div>
 		</div>
@@ -46,7 +50,10 @@
 			});
 			
 			$("#compareButton").click(function() {
-				alert("Comparing");
+// 				alert("Comparing");
+				$.post('/', {name: "First Last", time: "2pm"}, function(data) {
+					alert(data);
+				});
 			});
 			
 			$("#scheduleButton").click(function() {

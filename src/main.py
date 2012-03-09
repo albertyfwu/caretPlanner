@@ -4,6 +4,7 @@ import jinja2
 
 from google.appengine.api import users
 
+
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname
 (__file__)))
@@ -22,6 +23,10 @@ class MainPage(webapp2.RequestHandler):
             self.response.out.write(template.render(template_values))
         else:
             self.redirect(users.create_login_url(self.request.uri))
+    def post(self):
+        name = self.request.get('name')
+        time = self.request.get('time')
+        self.response.out.write(name + ' ' + time)
 
 app = webapp2.WSGIApplication([('/', MainPage)],
                               debug=True)
