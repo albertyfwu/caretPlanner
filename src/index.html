@@ -1,5 +1,134 @@
 <html>
+	<head>
+		<link href="style/style.css" rel="stylesheet" type="text/css">
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+		<script src="popup.js" type="text/javascript"></script>  
+	</head>
 	<body>
-		Hello there, {{ name }}!
+		<div id="wrap">
+			<div id="header-wrap">
+				<div id="header">
+					<a href="/"><img src="img/logo.png" /></a>
+					<!-- span id="title"><span id="social">social</span><span id="planner">Planner</span></span>-->
+					<button id="signOut">Sign Out</button>
+				</div>
+			</div>
+			
+			<div id="inner-wrap">
+				<div id="content">
+					<iframe src="https://www.google.com/calendar/embed?wkst=1&amp;bgcolor=%23FFFFFF&amp;src={{ username }}%40gmail.com&amp;color=%23A32929&amp"
+					style="border-width:0" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
+				</div>
+				
+				<div id="sidebar">
+					<div id="circlesTitleDiv">
+						<span id="circlesTitle">Circles</span>
+					</div>
+										
+					<div id="circles">
+						Friends<br />
+						Family<br />
+						Enemies<br />
+						Following<br />
+						21W.785
+					</div>
+					<div id="circleButtons">
+						<button id="compareButton">Compare</button>
+						<button id="scheduleButton">Schedule</button>
+					</div>
+
+				</div>
+			</div>
+			
+			<div id="footer-wrap">			
+				<div id="footer">
+					<span id="copyright">Copyright socialPlanner 2012</span> | 
+					<a href="/about">About Us</a>
+				</div>
+			</div>
+		</div>
+		<div id="popupContact">
+			<a id="popupContactClose" href="#">x</a>
+			<h1>Title of popup</h1>
+			<p id="contactArea">
+				blahblah<br />
+				<input type="text" value="" id="query" /><br />
+				<span id="seethis"></span><br />
+				Click on X in the top-right corner to close.
+			</p>
+		</div>
+		<div id="backgroundPopup"></div>
+		<script>
+			//0 means disabled; 1 means enabled;
+			$("#query").keyup(function() {
+				$.post('/', {query: $("#query").val()}, function(data) {
+					result = 'Matches:<br /><br />';
+					$.each(data.matches, function(i, match) {
+						result += match + '<br />';
+					});
+					$("#seethis").html(result);
+				});
+			});
+			
+			$(document).keydown(function(e) {
+				if (e.keyCode == 27) {
+					disablePopup();
+				}
+			});
+			
+			var popupStatus = 0;
+			
+			function loadPopup(){
+				if (popupStatus == 0) {
+					$("#backgroundPopup").css({
+						"opacity": "0.7"
+					});
+					$("#backgroundPopup").fadeIn("slow");
+					$("#popupContact").fadeIn("slow");
+					popupStatus = 1;
+				}
+			}
+			
+			function disablePopup(){
+				if(popupStatus==1) {
+					$("#backgroundPopup").fadeOut("slow");
+					$("#popupContact").fadeOut("slow");
+					popupStatus = 0;
+				}
+			}
+			
+			function centerPopup(){
+				var popupHeight = $("#popupContact").height();  
+				var popupWidth = $("#popupContact").width(); 
+				//centering
+				$("#popupContact").css({
+					"position": "absolute",
+					"top": $(window).height()/2-popupHeight/2,
+					"left": $(window).width()/2-popupWidth/2
+	
+				});
+			}
+			
+			$("#compareButton").click(function(){
+				centerPopup();
+				loadPopup();
+			});
+			
+			$("#popupContactClose").click(function(){
+				disablePopup();
+			});
+			
+			$("#backgroundPopup").click(function(){
+				disablePopup();
+			});
+		
+			$("#signOut").click(function() {
+				window.location.href = "{{signOutUrl}}";
+			});
+			
+			$("#scheduleButton").click(function() {
+				alert("Scheduling");
+			});
+		</script>
 	</body>
 </html>
