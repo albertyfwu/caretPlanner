@@ -11,8 +11,7 @@ jinja_environment = jinja2.Environment(
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
-        user = users.get_current_user()
-        
+        user = users.get_current_user()        
         if user:
             template_values = {
                 'username': user.nickname(),
@@ -27,6 +26,11 @@ class MainPage(webapp2.RequestHandler):
         name = self.request.get('name')
         time = self.request.get('time')
         self.response.out.write(name + ' ' + time)
+        
+class AboutPage(webapp2.RequestHandler):
+    def get(self):
+        self.response.out.write(jinja_environment.get_template('about.html').render({}));
 
-app = webapp2.WSGIApplication([('/', MainPage)],
+app = webapp2.WSGIApplication([('/', MainPage),
+                               ('/about', AboutPage)],
                               debug=True)
