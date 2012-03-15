@@ -3,11 +3,17 @@ import os
 import jinja2
 
 from google.appengine.api import users
+from google.appengine.ext import webapp
+import json
+import re
 
+import logging
 
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname
 (__file__)))
+
+contacts = ['al', 'albert', 'alex', 'alexander', 'alexandra', 'a', 'as', 'asd', 'asdf']
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -26,8 +32,13 @@ class MainPage(webapp2.RequestHandler):
 #        name = self.request.get('name')
 #        time = self.request.get('time')
 #        self.response.out.write(name + ' ' + time)
-        text = self.request.get('text')
-        self.response.out.write(text + ' was typed')
+        query = self.request.get('query')
+        regex = '^' + query + '.*$'
+        matches = [name for name in contacts if re.match(regex, name)]
+        
+        self.response.headers['Content-Type'] = 'application/json'
+        result = json.dumps({'matches':matches})
+        self.response.out.write(result);
         
 class AboutPage(webapp2.RequestHandler):
     def get(self):
@@ -36,3 +47,9 @@ class AboutPage(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/about', AboutPage)],
                               debug=True)
+
+def main():
+    webapp.util.run_wsgi_app(app)
+    
+if __name__ == '__main__':
+    main()

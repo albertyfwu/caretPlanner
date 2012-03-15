@@ -48,88 +48,83 @@
 			</div>
 		</div>
 		<div id="popupContact">
-			<a id="popupContactClose">x</a>
+			<a id="popupContactClose" href="#">x</a>
 			<h1>Title of popup</h1>
 			<p id="contactArea">
-				blahblah
-				<br/><br/>
-				<input type="text" value="" id="search" />
-				<br/>
-				<span id="seethis"></span>
-				<br/>
-				
-				Click on X
-				<br/><br/>
+				blahblah<br />
+				<input type="text" value="" id="query" /><br />
+				<span id="seethis"></span><br />
+				Click on X in the top-right corner to close.
 			</p>
 		</div>
-		<div id="backgroundPopup"></div>  
+		<div id="backgroundPopup"></div>
 		<script>
-		//0 means disabled; 1 means enabled;
-		$("#search").keyup(function() {
-			$.post('/', {text: $("#search").val()}, function(data) {
-				$("#seethis").html(data);
-			});
-		});
-		
-		var popupStatus = 0;
-		
-		function loadPopup(){
-			if (popupStatus == 0) {
-				$("#backgroundPopup").css({
-					"opacity": "0.7"
+			//0 means disabled; 1 means enabled;
+			$("#query").keyup(function() {
+				$.post('/', {query: $("#query").val()}, function(data) {
+					result = 'Matches:<br /><br />';
+					$.each(data.matches, function(i, match) {
+						result += match + '<br />';
+					});
+					$("#seethis").html(result);
 				});
-				$("#backgroundPopup").fadeIn("slow");
-				$("#popupContact").fadeIn("slow");
-				popupStatus = 1;
-			}
-		}
-		
-		function disablePopup(){
-			if(popupStatus==1) {
-				$("#backgroundPopup").fadeOut("slow");
-				$("#popupContact").fadeOut("slow");
-				popupStatus = 0;
-			}
-		}
-		
-		function centerPopup(){
-			var popupHeight = $("#popupContact").height();  
-			var popupWidth = $("#popupContact").width(); 
-			//centering
-			$("#popupContact").css({
-				"position": "absolute",
-				"top": $(window).height()/2-popupHeight/2,
-				"left": $(window).width()/2-popupWidth/2
-
 			});
-		}
-		
-		$("#compareButton").click(function(){
-			centerPopup();
-			loadPopup();
-		});
-		
-		$("#popupContactClose").click(function(){
-			disablePopup();
-		});
-		
-		$("#backgroundPopup").click(function(){
-			disablePopup();
-		});
-		
-		
+			
+			$(document).keydown(function(e) {
+				if (e.keyCode == 27) {
+					disablePopup();
+				}
+			});
+			
+			var popupStatus = 0;
+			
+			function loadPopup(){
+				if (popupStatus == 0) {
+					$("#backgroundPopup").css({
+						"opacity": "0.7"
+					});
+					$("#backgroundPopup").fadeIn("slow");
+					$("#popupContact").fadeIn("slow");
+					popupStatus = 1;
+				}
+			}
+			
+			function disablePopup(){
+				if(popupStatus==1) {
+					$("#backgroundPopup").fadeOut("slow");
+					$("#popupContact").fadeOut("slow");
+					popupStatus = 0;
+				}
+			}
+			
+			function centerPopup(){
+				var popupHeight = $("#popupContact").height();  
+				var popupWidth = $("#popupContact").width(); 
+				//centering
+				$("#popupContact").css({
+					"position": "absolute",
+					"top": $(window).height()/2-popupHeight/2,
+					"left": $(window).width()/2-popupWidth/2
+	
+				});
+			}
+			
+			$("#compareButton").click(function(){
+				centerPopup();
+				loadPopup();
+			});
+			
+			$("#popupContactClose").click(function(){
+				disablePopup();
+			});
+			
+			$("#backgroundPopup").click(function(){
+				disablePopup();
+			});
 		
 			$("#signOut").click(function() {
 				window.location.href = "{{signOutUrl}}";
-				
 			});
-			
-// 			$("#compareButton").click(function() {
-// // 				alert("Comparing");
-// 				$.post('/', {name: "First Last", time: "2pm"}, function(data) {
-// 					alert(data);
-// 				});
-// 			});
 			
 			$("#scheduleButton").click(function() {
 				alert("Scheduling");
