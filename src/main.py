@@ -23,9 +23,11 @@ class MainPage(webapp2.RequestHandler):
         else:
             self.redirect(users.create_login_url(self.request.uri))
     def post(self):
-        name = self.request.get('name')
-        time = self.request.get('time')
-        self.response.out.write(name + ' ' + time)
+#        name = self.request.get('name')
+#        time = self.request.get('time')
+#        self.response.out.write(name + ' ' + time)
+        text = self.request.get('text')
+        self.response.out.write(text + ' was typed')
         
 class AboutPage(webapp2.RequestHandler):
     def get(self):
