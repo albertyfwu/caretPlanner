@@ -8,6 +8,11 @@ import json
 import re
 
 import logging
+import httplib2
+
+import gflags
+
+import apiclient.discovery
 
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname
