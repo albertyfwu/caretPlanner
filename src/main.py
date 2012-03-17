@@ -9,6 +9,13 @@ import re
 
 import logging
 
+import httplib2
+
+
+#import apiclient.discovery
+
+#from apiclient.discovery import build
+
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname
 (__file__)))
@@ -29,9 +36,6 @@ class MainPage(webapp2.RequestHandler):
         else:
             self.redirect(users.create_login_url(self.request.uri))
     def post(self):
-#        name = self.request.get('name')
-#        time = self.request.get('time')
-#        self.response.out.write(name + ' ' + time)
         query = self.request.get('query')
         regex = '^' + query + '.*$'
         matches = [name for name in contacts if re.match(regex, name)]
