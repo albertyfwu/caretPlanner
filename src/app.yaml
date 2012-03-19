@@ -2,9 +2,12 @@ application: caretplanner
 version: 1
 runtime: python27
 api_version: 1
-threadsafe: true
+threadsafe: no
 
 handlers:
+- url: /oauth2callback
+  script: oauth2client/appengine.py
+
 - url: /style
   static_dir: style
   
@@ -12,8 +15,4 @@ handlers:
   static_dir: img
 
 - url: /.*
-  script: main.app
-  
-libraries:
-- name: jinja2
-  version: latest
+  script: main.py
