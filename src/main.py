@@ -15,7 +15,16 @@ import gdata.gauth
 
 import logging
 
-token = None
+import json
+import re
+
+CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
+CONSUMER_SECRET = 'type secret here'
+
+contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
+
+# create a client for handling Contacts API
+contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
 
 class MainHandler(webapp.RequestHandler):
     def get(self):
@@ -30,6 +39,7 @@ class MainHandler(webapp.RequestHandler):
             self.response.out.write(template.render(path, template_values))
         else:
             self.redirect(users.create_login_url(self.request.uri))
+            
     def post(self):
         query = self.request.get('query')
         regex = '^' + query + '.*$'
@@ -45,37 +55,69 @@ class AboutHandler(webapp.RequestHandler):
         
 class ApiHandler(webapp.RequestHandler):
     def get(self):
-        contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
+        # do we already have an access token?         
+        try:            
+            query = gdata.contacts.client.ContactsQuery()
+            query.max_results = 100000
+            feed = contacts_client.GetContacts(q = query)
+            result = ''
         
-        token = gdata.gauth.OAuth2Token(client_id='TYPE CLIENT ID HERE',
-                                        client_secret='TYPE CLIENT SECRET HERE',
-                                        scope='https://www.google.com/m8/feeds',
-                                        user_agent='caretplanner')
-        logging.info('got here')
-        logging.info(type(token))
-##        self.redirect(token.generate_authorize_url())
-        logging.info('how about here?')
-
-        result = []
-##        self.response.out.write(result)
+            for i, entry in enumerate(feed.entry):
+                if entry.name:
+                    result += entry.name.full_name.text + ':'
+                    for email in entry.email:
+                        if email.primary and email.primary == 'true':
+                            result += ' ' + email.address
+                    result += '<br />'
+    
+            self.response.out.write(result)
+        except:
+            # if we don't have an access token already, get a request token
+            request_token = contacts_client.GetOAuthToken(
+                ['https://www.google.com/m8/feeds'],
+                'http://caretplanner.appspot.com/oauth2callback',
+                CONSUMER_KEY,
+                CONSUMER_SECRET)
+            
+            # save the token
+            gdata.gauth.AeSave(request_token, 'myKey')
+            
+            self.redirect(str(request_token.generate_authorization_url()))
 
 class OAuthHandler(webapp.RequestHandler):
     def get(self):
-        logging.info('Do you see this message?')
+        # recall the request token
+        saved_request_token = gdata.gauth.AeLoad('myKey')
+        request_token = gdata.gauth.AuthorizeRequestToken(saved_request_token, self.request.uri)
+        
+        # turn this into an access token
+        access_token = contacts_client.GetAccessToken(request_token)
+        gdata.gauth.AeSave(access_token, 'myAccessToken')
 
-        url = atom.http_core.Uri.parse_uri(self.request.uri)
-        if 'error' in url.query:
-            pass
-        else:
-            token.get_access_token(url.query)
-
-        self.response.out.write('asdfasdfasdfasdf')
+        contacts_client.auth_token = gdata.gauth.OAuthHmacToken(
+            CONSUMER_KEY, CONSUMER_SECRET, access_token.token, access_token.token_secret, gdata.gauth.ACCESS_TOKEN)
+        
+        self.redirect('/api')
+        
+#        result = ''
+#        query = gdata.contacts.client.ContactsQuery()
+#        query.max_results = 100000
+#        feed = contacts_client.GetContacts(q = query)
+#        for i, entry in enumerate(feed.entry):
+#            if entry.name:
+#                result += entry.name.full_name.text + ':'
+#                for email in entry.email:
+#                    if email.primary and email.primary == 'true':
+#                        result += ' ' + email.address
+#                result += '<br />'
+#
+#        self.response.out.write(result)
 
 application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
      ('/api', ApiHandler),
-     ('oauth2callback', OAuthHandler)],
+     ('/oauth2callback.*', OAuthHandler)],
     debug=True)
 
 def main():
