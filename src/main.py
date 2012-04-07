@@ -19,7 +19,7 @@ import json
 import re
 
 CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
-CONSUMER_SECRET = 'type secret here'
+CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'
 
 contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
 
@@ -55,6 +55,7 @@ class AboutHandler(webapp.RequestHandler):
         
 class ApiHandler(webapp.RequestHandler):
     def get(self):
+#        self.response.out.write('temporarily disabled')
         # do we already have an access token?         
         try:            
             query = gdata.contacts.client.ContactsQuery()
