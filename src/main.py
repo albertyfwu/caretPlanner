@@ -23,6 +23,8 @@ CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'
 
 contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
 
+contactsClients = {} # dictionary for ContactsClients
+
 # create a client for handling Contacts API
 contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
 
@@ -56,8 +58,9 @@ class AboutHandler(webapp.RequestHandler):
 class ApiHandler(webapp.RequestHandler):
     def get(self):
 #        self.response.out.write('temporarily disabled')
-        # do we already have an access token?         
-        try:            
+        # do we already have an access token?
+        if contactsClients.has_key(users.get_current_user()):
+            contacts_client = contactsClients[users.get_current_user()]
             query = gdata.contacts.client.ContactsQuery()
             query.max_results = 100000
             feed = contacts_client.GetContacts(q = query)
@@ -68,11 +71,13 @@ class ApiHandler(webapp.RequestHandler):
                     result += entry.name.full_name.text + ':'
                     for email in entry.email:
                         if email.primary and email.primary == 'true':
-                            result += ' ' + email.address
+                            result += '     ' + email.address
                     result += '<br />'
     
             self.response.out.write(result)
-        except:
+        else:
+            contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
+            contactsClients[users.get_current_user()] = contacts_client
             # if we don't have an access token already, get a request token
             request_token = contacts_client.GetOAuthToken(
                 ['https://www.google.com/m8/feeds'],
@@ -84,16 +89,20 @@ class ApiHandler(webapp.RequestHandler):
             gdata.gauth.AeSave(request_token, 'myKey')
             
             self.redirect(str(request_token.generate_authorization_url()))
+            
 
 class OAuthHandler(webapp.RequestHandler):
     def get(self):
         # recall the request token
         saved_request_token = gdata.gauth.AeLoad('myKey')
+        gdata.gauth.AeDelete('myKey')
         request_token = gdata.gauth.AuthorizeRequestToken(saved_request_token, self.request.uri)
         
+        # get the contacts client
+        contacts_client = contactsClients[users.get_current_user()]
         # turn this into an access token
         access_token = contacts_client.GetAccessToken(request_token)
-        gdata.gauth.AeSave(access_token, 'myAccessToken')
+#        gdata.gauth.AeSave(access_token, 'myAccessToken')
 
         contacts_client.auth_token = gdata.gauth.OAuthHmacToken(
             CONSUMER_KEY, CONSUMER_SECRET, access_token.token, access_token.token_secret, gdata.gauth.ACCESS_TOKEN)
