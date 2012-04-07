@@ -25,9 +25,6 @@ contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
 
 contactsClients = {} # dictionary for ContactsClients
 
-# create a client for handling Contacts API
-contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
-
 class MainHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
