@@ -1,59 +1,190 @@
-import webapp2
 import os
-import jinja2
+
+from google.appengine.ext import webapp
+from google.appengine.ext.webapp.util import run_wsgi_app
+from google.appengine.ext.webapp import template
 
 from google.appengine.api import users
-from google.appengine.ext import webapp
-import json
-import re
+
+import atom.data
+import gdata.data
+import gdata.contacts.client
+
+import gdata.calendar.client
+
+import atom.http_core
+import gdata.gauth
 
 import logging
 
-import httplib2
+import json
+import re
 
+CONSUMER_KEY = '645332541228-79g5u7m0fpm6tu07t4na6nlbspi7jq2j.apps.googleusercontent.com'
+CONSUMER_SECRET = 'zN721xIL8yNRa4SKUFwKNp6b'
 
-#import apiclient.discovery
+#CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
+#CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'
 
-#from apiclient.discovery import build
+contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
 
-jinja_environment = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(os.path.dirname
-(__file__)))
+contactsClients = {} # dictionary for ContactsClients
+calendarClients = {} # dictionary for calendarClients
 
-contacts = ['al', 'albert', 'alex', 'alexander', 'alexandra', 'a', 'as', 'asd', 'asdf']
-
-class MainPage(webapp2.RequestHandler):
+class MainHandler(webapp.RequestHandler):
     def get(self):
-        user = users.get_current_user()        
+        user = users.get_current_user()
         if user:
             template_values = {
                 'username': user.nickname(),
-                'signOutUrl': users.create_logout_url("/")
+                'signOutUrl': users.create_logout_url('/')
             }
-            
-            template = jinja_environment.get_template('index.html')
-            self.response.out.write(template.render(template_values))
+
+            path = os.path.join(os.path.dirname(__file__), 'index.html')
+            self.response.out.write(template.render(path, template_values))
         else:
             self.redirect(users.create_login_url(self.request.uri))
+            
     def post(self):
         query = self.request.get('query')
         regex = '^' + query + '.*$'
         matches = [name for name in contacts if re.match(regex, name)]
-        
-        self.response.headers['Content-Type'] = 'application/json'
-        result = json.dumps({'matches':matches})
-        self.response.out.write(result);
-        
-class AboutPage(webapp2.RequestHandler):
-    def get(self):
-        self.response.out.write(jinja_environment.get_template('about.html').render({}));
 
-app = webapp2.WSGIApplication([('/', MainPage),
-                               ('/about', AboutPage)],
-                              debug=True)
+        self.response.headers['Content-Type'] = 'application/json'
+        result = json.dumps({'matches': matches})
+        self.response.out.write(result)
+
+class AboutHandler(webapp.RequestHandler):
+    def get(self):
+        self.response.out.write()
+
+class CalendarHandler(webapp.RequestHandler):
+    def get(self):
+        if calendarClients.has_key(users.get_current_user()):
+            calendar_client = calendarClients[users.get_current_user()]
+            query = gdata.calendar.client.CalendarEventQuery()
+            query.max_results = 100000
+            feed = calendar_client.GetAllCalendarsFeed(q = query)
+            result = 'Printing allcalendars: %s' % feed.title.text
+            for i, a_calendar in zip(xrange(len(feed.entry)), feed.entry):
+                result += '\t%s. %s' % (i, a_calendar.title.text,)
+            
+            self.response.out.write(result)
+            
+        else:
+            calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
+            calendarClients[users.get_current_user()] = calendar_client
+            # if we don't have an access token already, get a request token
+            request_token = calendar_client.GetOAuthToken(
+                ['http://www.google.com/calendar/feeds'],
+#                'http://caretplanner.appspot.com/oauth2callback',
+                'http://localhost:8080/oauth2callback',
+                CONSUMER_KEY,
+                CONSUMER_SECRET)
+            
+            # save the token
+            gdata.gauth.AeSave(request_token, 'myCalendarKey')
+            
+            self.redirect(str(request_token.generate_authorization_url()))
+
+
+class ApiHandler(webapp.RequestHandler):
+    def get(self):
+#        self.response.out.write('temporarily disabled')
+        # do we already have an access token?
+        if contactsClients.has_key(users.get_current_user()):
+            contacts_client = contactsClients[users.get_current_user()]
+            query = gdata.contacts.client.ContactsQuery()
+            query.max_results = 100000
+            feed = contacts_client.GetContacts(q = query)
+            result = ''
+            
+            for i, entry in enumerate(feed.entry):
+                if entry.name:
+                    result += entry.name.full_name.text + ':'
+                    for email in entry.email:
+                        if email.primary and email.primary == 'true':
+                            result += '     ' + email.address
+                    result += '<br />'
+    
+            self.response.out.write(result)
+        else:
+            contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
+            contactsClients[users.get_current_user()] = contacts_client
+            # if we don't have an access token already, get a request token
+            request_token = contacts_client.GetOAuthToken(
+                ['https://www.google.com/m8/feeds'],
+#                'http://caretplanner.appspot.com/oauth2callback',
+                'http://localhost:8080/oauth2callback',
+                CONSUMER_KEY,
+                CONSUMER_SECRET)
+            
+            # save the token
+            gdata.gauth.AeSave(request_token, 'myContactsKey')
+            
+            self.redirect(str(request_token.generate_authorization_url()))
+            
+
+class OAuthHandler(webapp.RequestHandler):
+    def get(self):
+        # recall the request token
+        saved_request_token = gdata.gauth.AeLoad('myContactsKey')
+        if saved_request_token is None:
+            gdata.gauth.AeDelete('myContactsKey')
+            saved_request_token = gdata.gauth.AeLoad('myCalendarKey')
+            gdata.gauth.AeDelete('myCalendarKey')
+            flag = 0 # flag 2 --> calendar
+            # get client
+            client = calendarClients[users.get_current_user()]
+        else: # if not none
+            gdata.gauth.AeDelete('myContactsKey')
+            flag = 1 # flag 1 --> contacts
+            # get client
+            client = contactsClients[users.get_current_user()]
+
+        request_token = gdata.gauth.AuthorizeRequestToken(saved_request_token, self.request.uri)
+        # turn this into an access token
+        access_token = client.GetAccessToken(request_token)
+        #gdata.gauth.AeSave(access_token, 'myAccessToken')
+        client.auth_token = gdata.gauth.OAuthHmacToken(
+        CONSUMER_KEY, CONSUMER_SECRET, access_token.token, access_token.token_secret, gdata.gauth.ACCESS_TOKEN)
+        if flag == 1:
+            self.redirect('/api')
+        else:
+            self.redirect('/calendar')
+        
+           
+        
+#        result = ''
+#        query = gdata.contacts.client.ContactsQuery()
+#        query.max_results = 100000
+#        feed = contacts_client.GetContacts(q = query)
+#        for i, entry in enumerate(feed.entry):
+#            if entry.name:
+#                result += entry.name.full_name.text + ':'
+#                for email in entry.email:
+#                    if email.primary and email.primary == 'true':
+#                        result += ' ' + email.address
+#                result += '<br />'
+#
+#        self.response.out.write(result)
+
+class SignOutHandler(webapp.RequestHandler):
+    def get(self):
+        pass
+    def post(self):
+        del contactsClients[users.get_current_user()]
+
+application = webapp.WSGIApplication(
+    [('/', MainHandler),
+     ('/about', AboutHandler),
+     ('/api', ApiHandler),
+     ('/calendar', CalendarHandler),
+     ('/oauth2callback.*', OAuthHandler)],
+    debug=True)
 
 def main():
-    webapp.util.run_wsgi_app(app)
-    
+    run_wsgi_app(application)
+
 if __name__ == '__main__':
     main()
