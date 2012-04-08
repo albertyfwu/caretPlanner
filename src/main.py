@@ -20,11 +20,11 @@ import logging
 import json
 import re
 
-CONSUMER_KEY = '645332541228-79g5u7m0fpm6tu07t4na6nlbspi7jq2j.apps.googleusercontent.com'
-CONSUMER_SECRET = 'zN721xIL8yNRa4SKUFwKNp6b'
+#CONSUMER_KEY = '645332541228-79g5u7m0fpm6tu07t4na6nlbspi7jq2j.apps.googleusercontent.com'
+#CONSUMER_SECRET = 'zN721xIL8yNRa4SKUFwKNp6b'
 
-#CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
-#CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'
+CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
+CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'
 
 contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
 
@@ -68,8 +68,8 @@ class MainHandler(webapp.RequestHandler):
                 # if we don't have an access token already, get a request token
                 request_token = contacts_client.GetOAuthToken(
                     ['https://www.google.com/m8/feeds'],
-#                'http://caretplanner.appspot.com/oauth2callback',
-                    'http://localhost:8080/oauth2callback',
+                    'http://caretplanner.appspot.com/oauth2callback',
+#                    'http://localhost:8080/oauth2callback',
                     CONSUMER_KEY,
                     CONSUMER_SECRET)
             
@@ -113,8 +113,8 @@ class CalendarHandler(webapp.RequestHandler):
             # if we don't have an access token already, get a request token
             request_token = calendar_client.GetOAuthToken(
                 ['http://www.google.com/calendar/feeds'],
-#                'http://caretplanner.appspot.com/oauth2callback',
-                'http://localhost:8080/oauth2callback',
+                'http://caretplanner.appspot.com/oauth2callback',
+#                'http://localhost:8080/oauth2callback',
                 CONSUMER_KEY,
                 CONSUMER_SECRET)
             
