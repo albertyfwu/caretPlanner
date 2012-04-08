@@ -71,14 +71,14 @@ class CalendarHandler(webapp.RequestHandler):
             
             self.response.out.write(result)
             
-        else: 
+        else:
             calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
             calendarClients[users.get_current_user()] = calendar_client
             # if we don't have an access token already, get a request token
             request_token = calendar_client.GetOAuthToken(
-                ['https://www.google.com/m8/feeds'],
+                ['http://www.google.com/calendar/feeds'],
 #                'http://caretplanner.appspot.com/oauth2callback',
-                'urn:ietf:wg:oauth:2.0:oob',
+                'http://localhost:8080/oauth2callback',
                 CONSUMER_KEY,
                 CONSUMER_SECRET)
             
@@ -128,14 +128,15 @@ class ApiHandler(webapp.RequestHandler):
 class OAuthHandler(webapp.RequestHandler):
     def get(self):
         # recall the request token
-        saved_request_token = gdata.gauth.AeLoad('myContactKey')
-        if saved_request_token == None:
+        saved_request_token = gdata.gauth.AeLoad('myContactsKey')
+        if saved_request_token is None:
+            gdata.gauth.AeDelete('myContactsKey')
             saved_request_token = gdata.gauth.AeLoad('myCalendarKey')
             gdata.gauth.AeDelete('myCalendarKey')
             flag = 0 # flag 2 --> calendar
             # get client
             client = calendarClients[users.get_current_user()]
-        else:
+        else: # if not none
             gdata.gauth.AeDelete('myContactsKey')
             flag = 1 # flag 1 --> contacts
             # get client
