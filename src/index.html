@@ -26,11 +26,9 @@
 					</div>
 										
 					<div id="circles">
-						Friends<br />
-						Family<br />
-						Enemies<br />
-						Following<br />
-						21W.785
+						{% for contact in contacts %}
+							{{ contact }}<br />
+						{% endfor %}
 					</div>
 					<div id="circleButtons">
 						<button id="compareButton">Compare</button>

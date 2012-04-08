@@ -35,13 +35,49 @@ class MainHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
         if user:
-            template_values = {
-                'username': user.nickname(),
-                'signOutUrl': users.create_logout_url('/')
-            }
-
-            path = os.path.join(os.path.dirname(__file__), 'index.html')
-            self.response.out.write(template.render(path, template_values))
+            if contactsClients.has_key(users.get_current_user()):
+                contacts = []
+                contacts_client = contactsClients[users.get_current_user()]
+                query = gdata.contacts.client.ContactsQuery()
+                query.max_results = 100000
+                feed = contacts_client.GetContacts(q = query)
+                
+                for i, entry in enumerate(feed.entry):
+                    if entry.name:
+                        for email in entry.email:
+                            if email.address.find('@gmail.com') != -1:
+                                contacts.append(entry.name.full_name.text)
+#                            if email.primary and email.primary == 'true':
+#                                result += '     ' + email.address
+#                        result += '<br />'
+                
+                contacts.sort()
+        
+#                self.response.out.write(result)
+                template_values = {
+                    'username': user.nickname(),
+                    'signOutUrl': users.create_logout_url('/'),
+                    'contacts': contacts
+                }
+    
+                path = os.path.join(os.path.dirname(__file__), 'index.html')
+                self.response.out.write(template.render(path, template_values))
+            else:
+                contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
+                contactsClients[users.get_current_user()] = contacts_client
+                # if we don't have an access token already, get a request token
+                request_token = contacts_client.GetOAuthToken(
+                    ['https://www.google.com/m8/feeds'],
+#                'http://caretplanner.appspot.com/oauth2callback',
+                    'http://localhost:8080/oauth2callback',
+                    CONSUMER_KEY,
+                    CONSUMER_SECRET)
+            
+                # save the token
+                gdata.gauth.AeSave(request_token, 'myContactsKey')
+                
+                self.redirect(str(request_token.generate_authorization_url()))
+                            
         else:
             self.redirect(users.create_login_url(self.request.uri))
             
@@ -65,7 +101,7 @@ class CalendarHandler(webapp.RequestHandler):
             query = gdata.calendar.client.CalendarEventQuery()
             query.max_results = 100000
             feed = calendar_client.GetAllCalendarsFeed(q = query)
-            result = 'Printing allcalendars: %s' % feed.title.text
+            result = 'Printing all calendars: %s' % feed.title.text
             for i, a_calendar in zip(xrange(len(feed.entry)), feed.entry):
                 result += '\t%s. %s' % (i, a_calendar.title.text,)
             
@@ -149,7 +185,8 @@ class OAuthHandler(webapp.RequestHandler):
         client.auth_token = gdata.gauth.OAuthHmacToken(
         CONSUMER_KEY, CONSUMER_SECRET, access_token.token, access_token.token_secret, gdata.gauth.ACCESS_TOKEN)
         if flag == 1:
-            self.redirect('/api')
+#            self.redirect('/api')
+            self.redirect('/')
         else:
             self.redirect('/calendar')
         
