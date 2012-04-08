@@ -59,7 +59,7 @@
 		</div>
 		<div id="backgroundPopup"></div>
 		<script>
-			//0 means disabled; 1 means enabled;
+			// 0 means disabled; 1 means enabled;
 			$("#query").keyup(function() {
 				$.post('/', {query: $("#query").val()}, function(data) {
 					result = 'Matches:<br /><br />';
@@ -109,20 +109,21 @@
 				});
 			}
 			
-			$("#compareButton").click(function(){
+			$("#compareButton").click(function() {
 				centerPopup();
 				loadPopup();
 			});
 			
-			$("#popupContactClose").click(function(){
+			$("#popupContactClose").click(function() {
 				disablePopup();
 			});
 			
-			$("#backgroundPopup").click(function(){
+			$("#backgroundPopup").click(function() {
 				disablePopup();
 			});
 		
 			$("#signOut").click(function() {
+				$.post('/signOut');
 				window.location.href = "{{signOutUrl}}";
 			});
 			
