@@ -134,12 +134,12 @@ class MainHandler(webapp.RequestHandler):
                             if entry.name:
                                 for email in entry.email:
                                     if email.address.find('@gmail.com') != -1:
-                                        contacts.append(entry.name.full_name.text)
+                                        contacts.append({'name':entry.name.full_name.text, 'email':email.address})
         #                            if email.primary and email.primary == 'true':
         #                                result += '     ' + email.address
         #                        result += '<br />'
                         
-                        contacts.sort()
+                        contacts.sort(key = lambda x: x['name'])
                 
         #                self.response.out.write(result)
                         template_values = {
