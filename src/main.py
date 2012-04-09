@@ -20,11 +20,11 @@ import logging
 import json
 import re
 
-#CONSUMER_KEY = '645332541228-79g5u7m0fpm6tu07t4na6nlbspi7jq2j.apps.googleusercontent.com'
-#CONSUMER_SECRET = 'zN721xIL8yNRa4SKUFwKNp6b'
+CONSUMER_KEY = '645332541228-79g5u7m0fpm6tu07t4na6nlbspi7jq2j.apps.googleusercontent.com'
+CONSUMER_SECRET = 'zN721xIL8yNRa4SKUFwKNp6b'
 
-CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
-CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'
+#CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
+#CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'
 
 contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
 
@@ -46,14 +46,9 @@ class MainHandler(webapp.RequestHandler):
                     if entry.name:
                         for email in entry.email:
                             if email.address.find('@gmail.com') != -1:
-                                contacts.append(entry.name.full_name.text)
-#                            if email.primary and email.primary == 'true':
-#                                result += '     ' + email.address
-#                        result += '<br />'
-                
+                                contacts.append(entry.name.full_name.text)                
                 contacts.sort()
-        
-#                self.response.out.write(result)
+                
                 template_values = {
                     'username': user.nickname(),
                     'signOutUrl': users.create_logout_url('/'),
@@ -68,8 +63,8 @@ class MainHandler(webapp.RequestHandler):
                 # if we don't have an access token already, get a request token
                 request_token = contacts_client.GetOAuthToken(
                     ['https://www.google.com/m8/feeds'],
-                    'http://caretplanner.appspot.com/oauth2callback',
-#                    'http://localhost:8080/oauth2callback',
+#                    'http://caretplanner.appspot.com/oauth2callback',
+                    'http://localhost:8080/oauth2callback',
                     CONSUMER_KEY,
                     CONSUMER_SECRET)
             
@@ -93,6 +88,18 @@ class MainHandler(webapp.RequestHandler):
 class AboutHandler(webapp.RequestHandler):
     def get(self):
         self.response.out.write()
+        
+class ScheduleEventHandler(webapp.RequestHandler):
+    def get(self):
+        pass
+    def post(self):
+        contacts = json.loads(self.request.get('contacts'))
+        # do stuff with these contacts
+        result = "The following times are good for scheduling an event:\n" + \
+            "2/15 3:00PM - 4:00PM\n" + \
+            "2/20 4:45PM - 6:15PM"
+        # end do stuff with these contacts
+        self.response.out.write(result)
 
 class CalendarHandler(webapp.RequestHandler):
     def get(self):
@@ -103,6 +110,7 @@ class CalendarHandler(webapp.RequestHandler):
             feed = calendar_client.GetAllCalendarsFeed(q = query)
             result = 'Printing all calendars: %s' % feed.title.text
             for i, a_calendar in zip(xrange(len(feed.entry)), feed.entry):
+                result += '     ' + a_calendar + '      '
                 result += '\t%s. %s' % (i, a_calendar.title.text,)
             
             self.response.out.write(result)
@@ -113,8 +121,8 @@ class CalendarHandler(webapp.RequestHandler):
             # if we don't have an access token already, get a request token
             request_token = calendar_client.GetOAuthToken(
                 ['http://www.google.com/calendar/feeds'],
-                'http://caretplanner.appspot.com/oauth2callback',
-#                'http://localhost:8080/oauth2callback',
+#                'http://caretplanner.appspot.com/oauth2callback',
+                'http://localhost:8080/oauth2callback',
                 CONSUMER_KEY,
                 CONSUMER_SECRET)
             
@@ -216,6 +224,7 @@ application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
      ('/api', ApiHandler),
+     ('/scheduleEvent', ScheduleEventHandler),
      ('/calendar', CalendarHandler),
      ('/oauth2callback.*', OAuthHandler)],
     debug=True)

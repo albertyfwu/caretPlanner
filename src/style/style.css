@@ -56,12 +56,12 @@ body {
 	border-radius:8px;
 }
 
-#circlesTitleDiv {
+#contactsTitleDiv {
 	padding:15px;
 	font-size:24px;
 }
 
-#circles {
+#contacts {
 	padding:15px;
 	overflow:auto;
 	height:500px;

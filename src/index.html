@@ -21,13 +21,13 @@
 				</div>
 				
 				<div id="sidebar">
-					<div id="circlesTitleDiv">
-						<span id="circlesTitle">Circles</span>
+					<div id="contactsTitleDiv">
+						<span id="contactsTitle">Contacts</span>
 					</div>
 										
-					<div id="circles">
+					<div id="contacts">
 						{% for contact in contacts %}
-							{{ contact }}<br />
+							<input type="checkbox" value="{{ contact }}">{{ contact }}<br />
 						{% endfor %}
 					</div>
 					<div id="circleButtons">
@@ -102,8 +102,7 @@
 				$("#popupContact").css({
 					"position": "absolute",
 					"top": $(window).height()/2-popupHeight/2,
-					"left": $(window).width()/2-popupWidth/2
-	
+					"left": $(window).width()/2-popupWidth/2	
 				});
 			}
 			
@@ -126,7 +125,14 @@
 			});
 			
 			$("#scheduleButton").click(function() {
-				alert("Scheduling");
+				var contacts = new Array();
+				var i = 0;
+				$("input:checked").each(function(index, value) {
+					contacts[index] = value.value;
+				});
+				$.post('/scheduleEvent', {contacts: JSON.stringify(contacts)}, function(data) {
+					alert(data);
+				});
 			});
 		</script>
 	</body>
