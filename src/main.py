@@ -84,22 +84,24 @@ class MainHandler(webapp.RequestHandler):
                     
                     feed = calendar_client.GetOwnCalendarsFeed(q = query)
                     #ownerToCalendars[user.email()] = [] # to make sure that an entry is there so it doesn't run infinite loop
-                    for a_calendar in feed.entry:
-                        dictAppend(user.email(), a_calendar.get_id, ownerToCalendars)
-                        dictAppend(a_calendar.get_id, user.email(), calendarToOwners)
-#                        rule = gdata.calendar.data.CalendarAclEntry()
-#                        rule.scope = gdata.acl.data.AclScope(value="socialplanner21@gmail.com", type="user")
-#                        roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
-#                        rule.role = gdata.acl.data.AclRole(value=roleValue)
-#                        aclUrl = "https://www.google.com/calendar/feeds/default/acl/full"
-#                        returned_rule = calendar_client.InsertAclEntry(rule, aclUrl)
+                    #for a_calendar in feed.entry:
+                    a_calendar = feed.entry[0]
+                    dictAppend(user.email(), a_calendar.get_id, ownerToCalendars)
+                    dictAppend(a_calendar.get_id, user.email(), calendarToOwners)
+                    rule = gdata.calendar.data.CalendarAclEntry()
+                    rule.scope = gdata.acl.data.AclScope(value="socialplanner21@gmail.com", type="user")
+
+                    roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
+                    rule.role = gdata.acl.data.AclRole(value=roleValue)
+                    aclUrl = "https://www.google.com/calendar/feeds/default/acl/full"
+                    returned_rule = calendar_client.InsertAclEntry(rule, aclUrl)
                         
-                        aclEntryUri = "http://www.google.com/calendar/feeds/"
-                        aclEntryUri += "default/acl/full/user:%s" % ("socialplanner21@gmail.com")
-                        entry = calendar_client.GetCalendarAclEntry(aclEntryUri)
-                        roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
-                        entry.role = gdata.acl.data.AclRole(value=roleValue)
-                        returned_rule = calendar_client.Update(entry)
+#                        aclEntryUri = "http://www.google.com/calendar/feeds/"
+#                        aclEntryUri += "default/acl/full/user:%s" % ("socialplanner21@gmail.com")
+#                        entry = calendar_client.GetCalendarAclEntry(aclEntryUri)
+#                        roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
+#                        entry.role = gdata.acl.data.AclRole(value=roleValue)
+#                        returned_rule = calendar_client.Update(entry)
                 else:
                     logging.info("calender else")
                     calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
@@ -140,7 +142,7 @@ class MainHandler(webapp.RequestHandler):
                 
         #                self.response.out.write(result)
                         template_values = {
-                            'username': user.nickname(),
+                            'username': users.get_current_user().nickname(),
                             'signOutUrl': users.create_logout_url('/'),
                             'contacts': contacts
                         }
