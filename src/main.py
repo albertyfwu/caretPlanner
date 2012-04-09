@@ -46,8 +46,8 @@ class MainHandler(webapp.RequestHandler):
                     if entry.name:
                         for email in entry.email:
                             if email.address.find('@gmail.com') != -1:
-                                contacts.append(entry.name.full_name.text)                
-                contacts.sort()
+                                contacts.append({'name': entry.name.full_name.text, 'email': email.address})                
+                contacts.sort(key = lambda contact: contact['name'])
                 
                 template_values = {
                     'username': user.nickname(),
@@ -94,7 +94,9 @@ class ScheduleEventHandler(webapp.RequestHandler):
         pass
     def post(self):
         contacts = json.loads(self.request.get('contacts'))
+        # contacts is a list of Gmail email addresses
         # do stuff with these contacts
+        # algorithm goes here
         result = "The following times are good for scheduling an event:\n" + \
             "2/15 3:00PM - 4:00PM\n" + \
             "2/20 4:45PM - 6:15PM"

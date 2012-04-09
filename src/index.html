@@ -27,7 +27,7 @@
 										
 					<div id="contacts">
 						{% for contact in contacts %}
-							<input type="checkbox" value="{{ contact }}">{{ contact }}<br />
+							<input type="checkbox" value="{{ contact.email }}">{{ contact.name }}<br />
 						{% endfor %}
 					</div>
 					<div id="circleButtons">
