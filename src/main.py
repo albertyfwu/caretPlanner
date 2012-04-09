@@ -102,6 +102,9 @@ class MainHandler(webapp.RequestHandler):
 #                        roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
 #                        entry.role = gdata.acl.data.AclRole(value=roleValue)
 #                        returned_rule = calendar_client.Update(entry)
+
+
+                    self.redirect("/")
                 else:
                     logging.info("calender else")
                     calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
