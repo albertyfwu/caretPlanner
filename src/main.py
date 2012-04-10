@@ -64,21 +64,27 @@ def dictAppend(key, value, d):
         d[key] = [value]
 
 def RetrieveAclRule(username, calClient):
-    """Builds the aclEntryUri or the entry created in the previous example.
-    The sends a HTTP GET message and displays the entry returned in the
-    response."""
+    """Retrieves the entry associated with the Access Control Rule of the given username for
+    the primary calendar of the calClient"""
 
     aclEntryUri = "http://www.google.com/calendar/feeds/"
     aclEntryUri += "default/acl/full/user:%s" % (username)
     entry = calClient.GetCalendarAclEntry(aclEntryUri)
     return entry
-def updateDefaultCalendar(calClient):
+
+def updateDefaultACL(calClient):
+    """Updates the Access Control Rule for the overlord account for the user's default calendar"""
+    
     entry = RetrieveAclRule("socialplanner21@gmail.com", calClient)
     roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
     entry.role = gdata.acl.data.AclRole(value=roleValue)
     return calClient.Update(entry)
     
-def addDefaultCalendar(calClient):
+def shareDefaultCalendar(calClient):
+    """Shares the user's default calendar with the overlord account. First, it tries to add a new
+    access control rule for the overlord account. If it is already there, then it tries to update 
+    it."""
+    
     try:
         rule = gdata.calendar.data.CalendarAclEntry()
         rule.scope = gdata.acl.data.AclScope(value="socialplanner21@gmail.com", type="user")
@@ -88,7 +94,7 @@ def addDefaultCalendar(calClient):
         aclUrl = "https://www.google.com/calendar/feeds/default/acl/full"
         return calClient.InsertAclEntry(rule, aclUrl)
     except gdata.client.RequestError:
-        return updateDefaultCalendar(calClient)
+        return updateDefaultACL(calClient)
 
 ### this gets called when running main
 class MainHandler(webapp.RequestHandler):
@@ -112,15 +118,7 @@ class MainHandler(webapp.RequestHandler):
                     a_calendar = feed.entry[0]
                     dictAppend(user.email(), a_calendar.get_id, ownerToCalendars)
                     dictAppend(a_calendar.get_id, user.email(), calendarToOwners)
-                    returned_rule = addDefaultCalendar(calendar_client)
-                        
-#                        aclEntryUri = "http://www.google.com/calendar/feeds/"
-#                        aclEntryUri += "default/acl/full/user:%s" % ("socialplanner21@gmail.com")
-#                        entry = calendar_client.GetCalendarAclEntry(aclEntryUri)
-#                        roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
-#                        entry.role = gdata.acl.data.AclRole(value=roleValue)
-#                        returned_rule = calendar_client.Update(entry)
-
+                    returned_rule = shareDefaultCalendar(calendar_client)
 
                     self.redirect("/")
                 else:
