@@ -63,6 +63,32 @@ def dictAppend(key, value, d):
     else:
         d[key] = [value]
 
+def RetrieveAclRule(username, calClient):
+    """Builds the aclEntryUri or the entry created in the previous example.
+    The sends a HTTP GET message and displays the entry returned in the
+    response."""
+
+    aclEntryUri = "http://www.google.com/calendar/feeds/"
+    aclEntryUri += "default/acl/full/user:%s" % (username)
+    entry = calClient.GetCalendarAclEntry(aclEntryUri)
+    return entry
+def updateDefaultCalendar(calClient):
+    entry = RetrieveAclRule("socialplanner21@gmail.com", calClient)
+    roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
+    entry.role = gdata.acl.data.AclRole(value=roleValue)
+    return calClient.Update(entry)
+    
+def addDefaultCalendar(calClient):
+    try:
+        rule = gdata.calendar.data.CalendarAclEntry()
+        rule.scope = gdata.acl.data.AclScope(value="socialplanner21@gmail.com", type="user")
+    
+        roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
+        rule.role = gdata.acl.data.AclRole(value=roleValue)
+        aclUrl = "https://www.google.com/calendar/feeds/default/acl/full"
+        return calClient.InsertAclEntry(rule, aclUrl)
+    except gdata.client.RequestError:
+        return updateDefaultCalendar(calClient)
 
 ### this gets called when running main
 class MainHandler(webapp.RequestHandler):
@@ -86,13 +112,7 @@ class MainHandler(webapp.RequestHandler):
                     a_calendar = feed.entry[0]
                     dictAppend(user.email(), a_calendar.get_id, ownerToCalendars)
                     dictAppend(a_calendar.get_id, user.email(), calendarToOwners)
-                    rule = gdata.calendar.data.CalendarAclEntry()
-                    rule.scope = gdata.acl.data.AclScope(value="socialplanner21@gmail.com", type="user")
-
-                    roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
-                    rule.role = gdata.acl.data.AclRole(value=roleValue)
-                    aclUrl = "https://www.google.com/calendar/feeds/default/acl/full"
-                    returned_rule = calendar_client.InsertAclEntry(rule, aclUrl)
+                    returned_rule = addDefaultCalendar(calendar_client)
                         
 #                        aclEntryUri = "http://www.google.com/calendar/feeds/"
 #                        aclEntryUri += "default/acl/full/user:%s" % ("socialplanner21@gmail.com")
