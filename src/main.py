@@ -1,5 +1,9 @@
 import os
 
+import time
+import datetime
+from rfc3339 import rfc3339
+
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
@@ -62,6 +66,12 @@ def dictAppend(key, value, d):
         d[key] = d[key].append(value)
     else:
         d[key] = [value]
+        
+def dictAdd(key, value, d):
+    if key in d and d[key] != None:
+        d[key] = d[key]+value
+    else:
+        d[key] = value
 
 def RetrieveAclRule(username, calClient, cal_id):
     """Retrieves the entry associated with the Access Control Rule of the given username for
@@ -97,6 +107,86 @@ def shareDefaultCalendar(calClient, cal_id):
         return calClient.InsertAclEntry(rule, aclUrl)
     except gdata.client.RequestError:
         return updateDefaultACL(calClient, cal_id)
+    
+def calendarAvailability(calClient, calId, start_date, end_date):
+    """Returns true if and only if # events within the time frame is 0 in
+    calendar that is specified by calId. start_date and end_date are in
+    RFC 3339 format"""
+    
+    query = gdata.calendar.service.CalendarEventQuery(calId, 'private', 'full')
+    query.start_min = start_date
+    query.start_max = end_date
+    feed = calClient.CalendarQuery(q=query)
+    length = feed.entry.length
+    return length == 0
+
+def contactAvailability(calClient, calList, start_date, end_date):
+    for calId in calList:
+        if calendarAvailability(calClient, calId, start_date, end_date) == False:
+            return False
+    return True
+
+def FindTimes (calClient, contactsList, start_time, end_time, start_date, date_duration = 14, duration):
+    """
+    start_time and end_time are of types datetime.time
+    start_date is of types datetime.date
+    date_duration is n integer
+    duration is an integer, representing the number of minutes the event will last
+    contactsList is an array of email addresses
+    
+    returns list of start times that get the most people
+    """
+    bestTimes = {}
+    currentStart = datetime.datetime(start_date.year, start_date.month, start_date.day, start_time.hour, start_time.minute)
+    currentEnd = currentStart + datetime.timedelta(minutes = duration)
+    for i in range(date_duration):
+        while(currentEnd.time < end_time):
+            currentStartRfc = rfc3339(currentStart)
+            currentEndRfc = rfc3339(currentEnd)
+            for contact in contactsList:
+                if contact in ownerToCalendars:
+                    if contactAvailability(calClient, ownerToCalendars[contact], currentStartRfc, currentEndRfc):
+                        dictAdd(currentStart, 1, bestTimes)
+    max_value = max[bestTimes.values()]
+    if max_value == 0:
+        return None
+    output = []
+    for key in bestTimes.keys():
+        if (bestTimes[key] == max_value):
+            output.append(key)
+            
+    return output
+        
+def findEvents(calClient, calId, text_query='Tennis'):
+    """Retrieves events from the calendar which match the specified full-text
+    query.  The full-text query searches the title and content of an event,
+    but it does not search the value of extended properties at the time of
+    this writing.  It uses the default (primary) calendar of the authenticated
+    user and uses the private visibility/full projection feed.  Please see:
+    http://code.google.com/apis/calendar/reference.html#Feeds
+    for more information on the feed types.  Note: as we're not specifying
+    any query parameters other than the full-text query, recurring events
+    returned will not have gd:when elements in the response.  Please see
+    the Google Calendar API query paramters reference for more info:
+    http://code.google.com/apis/calendar/reference.html#Parameters"""
+    
+    query = gdata.calendar.service.CalendarEventQuery(calId, 'private', 'full')
+    query.text_query = text_query
+    feed = calClient.GetCalendarEventFeed(q=query)
+    output = []
+    
+    for an_event in feed.entry:
+        output.append(an_event)
+        
+def findEventsInContacts(calClient, contactsList, textQuery):
+    output = []
+    for contact in contactsList:
+        if contact in ownerToCalendars:
+            for calId in ownerToCalendars[contact]:
+                output.extend(findEvents(calClient, calId, textQuery))
+                
+    return output
+
 
 ### this gets called when running main
 class MainHandler(webapp.RequestHandler):
