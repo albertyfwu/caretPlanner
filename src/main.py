@@ -25,13 +25,26 @@ import logging
 import json
 import re
 
-CONSUMER_KEY = '645332541228-79g5u7m0fpm6tu07t4na6nlbspi7jq2j.apps.googleusercontent.com'
-CONSUMER_SECRET = 'zN721xIL8yNRa4SKUFwKNp6b'
+runningLocally = True
+# if True, runningLocally changes the oauthcallback to reflect localhost instead
+# of caretPlanner
+# if False, runningLocally uses caretPlanner and associated key
 
-CONSUMER_KEY2 = '645332541228-s084s80t2vuk84vh3h95vpqa6dqkb830.apps.googleusercontent.com'
-CONSUMER_SECRET2 = 'idvG3PNPeWjlPKMqHvF7RTfA'
-#CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
-#CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'
+if runningLocally == True:
+    CONSUMER_KEY = '645332541228-79g5u7m0fpm6tu07t4na6nlbspi7jq2j.apps.googleusercontent.com'
+    CONSUMER_SECRET = 'zN721xIL8yNRa4SKUFwKNp6b'
+    CONSUMER_KEY2 = '645332541228-s084s80t2vuk84vh3h95vpqa6dqkb830.apps.googleusercontent.com'
+    CONSUMER_SECRET2 = 'idvG3PNPeWjlPKMqHvF7RTfA'
+    calendarCallbackUrl = 'http://localhost:8080/oauth2calendarcallback'
+    clientCallbackUrl = 'http://localhost:8080/oauth2callback'
+    
+else:
+    CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
+    CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'    
+    CONSUMER_KEY2 = '645332541228-k6r9qt7esbhvsmts3rk1cqakrai2jvq1.apps.googleusercontent.com'
+    CONSUMER_SECRET2 = 'weJQmMvxdKum8XGxMadzHNTz'
+    calendarCallbackUrl = 'http://caretplanner.appspot.com/oauth2calendarcallback'
+    clientCallbackUrl = 'http://caretplanner.appspot.com/oauth2callback'
 
 contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
 
@@ -126,7 +139,7 @@ def contactAvailability(calClient, calList, start_date, end_date):
             return False
     return True
 
-def FindTimes (calClient, contactsList, start_time, end_time, start_date, date_duration = 14, duration):
+def FindTimes (calClient, contactsList, start_time, end_time, start_date, duration, date_duration = 14):
     """
     start_time and end_time are of types datetime.time
     start_date is of types datetime.date
@@ -187,7 +200,6 @@ def findEventsInContacts(calClient, contactsList, textQuery):
                 
     return output
 
-
 ### this gets called when running main
 class MainHandler(webapp.RequestHandler):
     def get(self):
@@ -197,7 +209,6 @@ class MainHandler(webapp.RequestHandler):
         user = users.get_current_user()        
         if user: # if logged in
             if not ownerToCalendars.has_key(user.email()): # if user is not registered
-                logging.info("asd;lkjfffffffffffffffffffffffffffffff")
                 if calendarClients.has_key(users.get_current_user()):
                     logging.info("has calendar key")
                     calendar_client = calendarClients[users.get_current_user()]
@@ -223,8 +234,7 @@ class MainHandler(webapp.RequestHandler):
                     # if we don't have an access token already, get a request token
                     request_token = calendar_client.GetOAuthToken(
                         ['http://www.google.com/calendar/feeds'],
-        #                'http://caretplanner.appspot.com/oauth2callback',
-                        'http://localhost:8080/oauth2calendarcallback',
+                        calendarCallbackUrl,
                         CONSUMER_KEY2,
                         CONSUMER_SECRET2)
                     
@@ -271,8 +281,7 @@ class MainHandler(webapp.RequestHandler):
                     # if we don't have an access token already, get a request token
                     request_token = contacts_client.GetOAuthToken(
                         ['https://www.google.com/m8/feeds'],
-    #                    'http://caretplanner.appspot.com/oauth2callback',
-                        'http://localhost:8080/oauth2callback',
+                        clientCallbackUrl,
                         CONSUMER_KEY,
                         CONSUMER_SECRET)
                 
@@ -372,8 +381,7 @@ class CalendarHandler(webapp.RequestHandler):
             # if we don't have an access token already, get a request token
             request_token = calendar_client.GetOAuthToken(
                 ['http://www.google.com/calendar/feeds'],
-#                'http://caretplanner.appspot.com/oauth2callback',
-                'http://localhost:8080/oauth2callback',
+                calendarCallbackUrl,
                 CONSUMER_KEY,
                 CONSUMER_SECRET)
             
@@ -409,8 +417,7 @@ class ApiHandler(webapp.RequestHandler):
             # if we don't have an access token already, get a request token
             request_token = contacts_client.GetOAuthToken(
                 ['https://www.google.com/m8/feeds'],
-#                'http://caretplanner.appspot.com/oauth2callback',
-                'http://localhost:8080/oauth2callback',
+                clientCallbackUrl,
                 CONSUMER_KEY,
                 CONSUMER_SECRET)
             
@@ -425,6 +432,7 @@ class OAuthCalendarHandler(webapp.RequestHandler):
         saved_request_token = gdata.gauth.AeLoad('myCalendarKey')
         gdata.gauth.AeDelete('myCalendarKey')
         # get client
+        logging.info(calendarClients)
         client = calendarClients[users.get_current_user()]
 
         request_token = gdata.gauth.AuthorizeRequestToken(saved_request_token, self.request.uri)
@@ -452,21 +460,6 @@ class OAuthHandler(webapp.RequestHandler):
         CONSUMER_KEY, CONSUMER_SECRET, access_token.token, access_token.token_secret, gdata.gauth.ACCESS_TOKEN)
 
         self.redirect('/')
-           
-        
-#        result = ''
-#        query = gdata.contacts.client.ContactsQuery()
-#        query.max_results = 100000
-#        feed = contacts_client.GetContacts(q = query)
-#        for i, entry in enumerate(feed.entry):
-#            if entry.name:
-#                result += entry.name.full_name.text + ':'
-#                for email in entry.email:
-#                    if email.primary and email.primary == 'true':
-#                        result += ' ' + email.address
-#                result += '<br />'
-#
-#        self.response.out.write(result)
 
 class SignOutHandler(webapp.RequestHandler):
     def get(self):
