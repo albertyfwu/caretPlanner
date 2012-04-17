@@ -16,6 +16,7 @@ import gdata.acl
 import gdata.contacts.client
 
 import gdata.calendar.client
+import gdata.calendar.service
 
 import atom.http_core
 import gdata.gauth
@@ -75,10 +76,14 @@ def getOwnedCalendars(userAddress):
         return None
     
 def dictAppend(key, value, d):
+    logging.info("dictAppend before")
+    logging.info(d)
     if key in d and d[key] != None:
-        d[key] = d[key].append(value)
+        d[key].append(value)
     else:
         d[key] = [value]
+    logging.info("dictAppend after")
+    logging.info(d)
         
 def dictAdd(key, value, d):
     if key in d and d[key] != None:
@@ -190,6 +195,20 @@ def findEvents(calClient, calId, text_query='Tennis'):
     
     for an_event in feed.entry:
         output.append(an_event)
+    
+    return output
+
+def findAllEvents(username, text_query):
+    logging.info("jsbach")
+    logging.info(calendarClients)
+    calClient = calendarClients[username]
+    output = []
+    logging.info("dvorak")
+    logging.info(ownerToCalendars)
+    for calId in ownerToCalendars[username]:
+        output.extend(findEvents(calClient, calId, text_query))
+        
+    return output
         
 def findEventsInContacts(calClient, contactsList, textQuery):
     output = []
@@ -209,9 +228,9 @@ class MainHandler(webapp.RequestHandler):
         user = users.get_current_user()        
         if user: # if logged in
             if not ownerToCalendars.has_key(user.email()): # if user is not registered
-                if calendarClients.has_key(users.get_current_user()):
+                if calendarClients.has_key(users.get_current_user().email()):
                     logging.info("has calendar key")
-                    calendar_client = calendarClients[users.get_current_user()]
+                    calendar_client = calendarClients[users.get_current_user().email()]
                     query = gdata.calendar.client.CalendarEventQuery()
                     query.max_results = 100000
                     
@@ -222,6 +241,8 @@ class MainHandler(webapp.RequestHandler):
                     for url in calurl:
                         urlSplitList = url.split("/")
                         cal_id = urlSplitList[5]
+                        logging.info("cal_id here")
+                        logging.info(cal_id)
                         dictAppend(user.email(), cal_id, ownerToCalendars)
                         dictAppend(cal_id, user.email(), calendarToOwners)
                         logging.info(cal_id)
@@ -230,7 +251,7 @@ class MainHandler(webapp.RequestHandler):
                 else:
                     logging.info("calender else")
                     calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
-                    calendarClients[users.get_current_user()] = calendar_client
+                    calendarClients[users.get_current_user().email()] = calendar_client
                     # if we don't have an access token already, get a request token
                     request_token = calendar_client.GetOAuthToken(
                         ['http://www.google.com/calendar/feeds'],
@@ -243,12 +264,12 @@ class MainHandler(webapp.RequestHandler):
                     
                     self.redirect(str(request_token.generate_authorization_url()))
             else: ## if user already registered
-                if contactsClients.has_key(users.get_current_user()): # if a contacts client is already available for current user
+                if contactsClients.has_key(users.get_current_user().email()): # if a contacts client is already available for current user
                     # use contact client that's available
                         for key in ownerToCalendars.keys():
                             logging.info(key)
                         contacts = []
-                        contacts_client = contactsClients[users.get_current_user()]
+                        contacts_client = contactsClients[users.get_current_user().email()]
                         query = gdata.contacts.client.ContactsQuery()
                         query.max_results = 100000
                         feed = contacts_client.GetContacts(q = query)
@@ -263,6 +284,13 @@ class MainHandler(webapp.RequestHandler):
         #                        result += '<br />'
                         
                         contacts.sort(key = lambda x: x['name'])
+                        
+#                        logging.info(calendarClients)
+                        stuffToPrint = findAllEvents('asdfryan123', '6.046 Lecture')
+                        logging.info("Fuck mendelssohn")
+                        logging.info(stuffToPrint)
+                        logging.info(len(stuffToPrint))
+                        logging.info("end fuck mendelssohn")
                 
         #                self.response.out.write(result)
                         template_values = {
@@ -277,7 +305,7 @@ class MainHandler(webapp.RequestHandler):
                 else:
                     logging.info("need contacts client")
                     contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
-                    contactsClients[users.get_current_user()] = contacts_client
+                    contactsClients[users.get_current_user().email()] = contacts_client
                     # if we don't have an access token already, get a request token
                     request_token = contacts_client.GetOAuthToken(
                         ['https://www.google.com/m8/feeds'],
@@ -362,8 +390,8 @@ class ScheduleEventHandler(webapp.RequestHandler):
 
 class CalendarHandler(webapp.RequestHandler):
     def get(self):
-        if calendarClients.has_key(users.get_current_user()):
-            calendar_client = calendarClients[users.get_current_user()]
+        if calendarClients.has_key(users.get_current_user().email()):
+            calendar_client = calendarClients[users.get_current_user().email()]
             query = gdata.calendar.client.CalendarEventQuery()
             query.max_results = 100000
             
@@ -377,7 +405,7 @@ class CalendarHandler(webapp.RequestHandler):
             
         else:
             calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
-            calendarClients[users.get_current_user()] = calendar_client
+            calendarClients[users.get_current_user().email()] = calendar_client
             # if we don't have an access token already, get a request token
             request_token = calendar_client.GetOAuthToken(
                 ['http://www.google.com/calendar/feeds'],
@@ -395,8 +423,8 @@ class ApiHandler(webapp.RequestHandler):
     def get(self):
 #        self.response.out.write('temporarily disabled')
         # do we already have an access token?
-        if contactsClients.has_key(users.get_current_user()):
-            contacts_client = contactsClients[users.get_current_user()]
+        if contactsClients.has_key(users.get_current_user().email()):
+            contacts_client = contactsClients[users.get_current_user().email()]
             query = gdata.contacts.client.ContactsQuery()
             query.max_results = 100000
             feed = contacts_client.GetContacts(q = query)
@@ -413,7 +441,7 @@ class ApiHandler(webapp.RequestHandler):
             self.response.out.write(result)
         else:
             contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
-            contactsClients[users.get_current_user()] = contacts_client
+            contactsClients[users.get_current_user().email()] = contacts_client
             # if we don't have an access token already, get a request token
             request_token = contacts_client.GetOAuthToken(
                 ['https://www.google.com/m8/feeds'],
@@ -433,7 +461,7 @@ class OAuthCalendarHandler(webapp.RequestHandler):
         gdata.gauth.AeDelete('myCalendarKey')
         # get client
         logging.info(calendarClients)
-        client = calendarClients[users.get_current_user()]
+        client = calendarClients[users.get_current_user().email()]
 
         request_token = gdata.gauth.AuthorizeRequestToken(saved_request_token, self.request.uri)
         # turn this into an access token
@@ -450,7 +478,7 @@ class OAuthHandler(webapp.RequestHandler):
         saved_request_token = gdata.gauth.AeLoad('myContactsKey')
         gdata.gauth.AeDelete('myContactsKey')
         # get client
-        client = contactsClients[users.get_current_user()]
+        client = contactsClients[users.get_current_user().email()]
 
         request_token = gdata.gauth.AuthorizeRequestToken(saved_request_token, self.request.uri)
         # turn this into an access token
@@ -465,10 +493,10 @@ class SignOutHandler(webapp.RequestHandler):
     def get(self):
         pass
     def post(self):
-        if users.get_current_user() in contactsClients:
-            del contactsClients[users.get_current_user()]
-        if users.get_current_user() in calendarClients:
-            del calendarClients[users.get_current_user()]
+        if users.get_current_user().email() in contactsClients:
+            del contactsClients[users.get_current_user().email()]
+        if users.get_current_user().email() in calendarClients:
+            del calendarClients[users.get_current_user().email()]
 
 application = webapp.WSGIApplication(
     [('/', MainHandler),

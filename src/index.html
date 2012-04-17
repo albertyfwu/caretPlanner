@@ -25,18 +25,18 @@
 			<div id="inner-wrap">
 				<div id="content">
 					<ul>
-						<li><a href="#tabs-1">Calendar</a></li>
-						<li><a href="#tabs-2">Find Events</a></li>
-						<li><a href="#tabs-3">Schedule an Event</a></li>
+						<li><a href="#tabs-0">Calendar</a></li>
+						<li><a href="#tabs-1">Find Events</a></li>
+						<li><a href="#tabs-2">Schedule an Event</a></li>
 					</ul>
-					<div id="tabs-1">
+					<div id="tabs-0">
 						<iframe src="https://www.google.com/calendar/embed?wkst=1&amp;bgcolor=%23FFFFFF&amp;src={{ username }}%40gmail.com&amp;color=%23A32929&amp"
 						style="border-width:0" width="100%" height="90%" frameborder="0" scrolling="no"></iframe>
 					</div>
-					<div id="tabs-2">
+					<div id="tabs-1">
 						Find Events
 					</div>
-					<div id="tabs-3">
+					<div id="tabs-2">
 						Schedule an Event
 					</div>
 				</div>
@@ -128,8 +128,9 @@
 			}
 			
 			$("#compareButton").click(function() {
-				centerPopup();
-				loadPopup();
+// 				centerPopup();
+// 				loadPopup();
+				$("#content").tabs().tabs('select', '#tabs-1');
 			});
 			
 			$("#popupContactClose").click(function() {
@@ -152,7 +153,8 @@
 					contacts[index] = value.value;
 				});
 				$.post('/scheduleEvent', {contacts: JSON.stringify(contacts)}, function(data) {
-					alert(data);
+					$("#content").tabs().tabs('select', '#tabs-2');
+					$("#tabs-2").html(data);
 				});
 			});
 			
