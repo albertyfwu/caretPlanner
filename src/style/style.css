@@ -29,6 +29,15 @@ body {
 	color:#E46C0A;
 }
 
+#regContinueButton {
+	padding:4px;
+	color:black;
+}
+
+#regContinueDiv {
+	text-align:center;
+}
+
 #signOut {
 	float:right;
 	background-color:#D44937;
