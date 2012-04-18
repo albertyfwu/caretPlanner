@@ -3,6 +3,7 @@ import os
 import time
 import datetime
 from rfc3339 import rfc3339
+import re
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -125,13 +126,23 @@ def shareDefaultCalendar(calClient, cal_id):
         return calClient.InsertAclEntry(rule, aclUrl)
     except gdata.client.RequestError:
         return updateDefaultACL(calClient, cal_id)
+
+def getEvents(calClient, calId, start_date, end_date): 
+    """Returns list of events in the calendar that is between
+    start_date and end_date, which are both in RFC3339 format"""
+    
+    Url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
+    query = gdata.calendar.client.CalendarEventQuery(start_min=start_date, start_max=end_date)
+    feed = calClient.CalendarQuery(uri = Url, q=query)
+    return feed.entry
+    
     
 def calendarAvailability(calClient, calId, start_date, end_date):
     """Returns true if and only if # events within the time frame is 0 in
     calendar that is specified by calId. start_date and end_date are in
     RFC 3339 format"""
     
-    Url = "https://www.google.com/calendar/feeds/"+calId+"/acl/full"
+    Url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
     
     query = gdata.calendar.client.CalendarEventQuery(start_min=start_date, start_max=end_date)
     feed = calClient.CalendarQuery(uri = Url, q=query)
@@ -188,7 +199,7 @@ def findEvents(calClient, calId, text_query='Tennis'):
     the Google Calendar API query paramters reference for more info:
     http://code.google.com/apis/calendar/reference.html#Parameters"""
     
-    Url = "https://www.google.com/calendar/feeds/"+calId+"/acl/full"
+    Url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
     query = gdata.calendar.client.CalendarEventQuery(text_query=text_query)
     feed = calClient.GetCalendarEventFeed(uri = Url, q=query)
     output = []
@@ -200,6 +211,12 @@ def findEvents(calClient, calId, text_query='Tennis'):
             logging.info(an_event.title.text + " start: " + when.start + " end: " + when.end)
         ##d = {'start': an_event.start, 'end': an_event.end, 'name': an_event.title.text}
         #output.append(d)
+        for i, an_event in zip(xrange(len(feed.entry)), feed.entry):
+            logging.info('\t%s. %s' % (i, an_event.title.text,))
+            logging.info('\t\t%s. %s' % (i, an_event.content.text,))
+            for a_when in an_event.when:
+                logging.info('\t\tStart time: %s' % (a_when.start,))
+                logging.info('\t\tEnd time:   %s' % (a_when.end,))
     
     return output
 
@@ -224,6 +241,68 @@ def findEventsInContacts(calClient, contactsList, textQuery):
                 
     return output
 
+def findCommonEvents(calClient, email1, email2, start_date, end_date, constVar = 5):
+    """start_date and end_date are RFC3339 format"""
+    eventList1 = []
+    eventList2 = []
+    
+    if email1 in ownerToCalendars:
+        for calId in ownerToCalendars[email1]:
+            eventList1.extend(getEvents(calClient, calId, start_date, end_date))
+                              
+    if email2 in ownerToCalendars:
+        for calId in ownerToCalendars[email2]:
+            eventList2.extend(getEvents(calClient, calId, start_date, end_date))
+    
+    output = []
+    
+    for an_event in eventList1:
+        for an_event2 in eventList2:
+            result = compareEvents(an_event, an_event2, constVar)
+            if result:
+                d = {'Name': an_event2.title.text, 'Start': result[0], 'End': result[1]}
+    return output
+                        
+
+def compareEvents(event1, event2, var): 
+    if not stringMatching(event1.title.text, event2.title.text):
+        return False
+    else:
+        for when in event1.when:
+            for when2 in event2.when:
+                if compareTimes(when.start, when2.start, var) and compareTimes(when.end, when2.end, var):
+                    return (when2.start, when2.end)
+        return False
+def stringMatching(str1, str2):
+    p = re.compile('^\d+.\d+')
+    m1 = p.match(str1)
+    m2 = p.match(str2)
+    if m1 and m2:
+        return m1.group() == m2.group()
+    else:
+        return str1 == str2
+
+def rfcTodateTime(rfc):
+    year = int(rfc[0:4])
+    month = int(rfc[5:7])
+    day = int(rfc[8:10])
+    hour = int(rfc[11:13])
+    minute = int(rfc[14:16])
+    # ignore seconds
+    
+    length = len(rfc)
+    if rfc[length-1] == 'z':
+        return datetime.datetime(year, month, day, hour, minute)
+    else:
+        hour += int(rfc[length-6:length-3])
+        return datetime.datetime(year, month, day, hour, minute)
+
+
+def compareTimes(t1, t2, constVar):
+    """t1 and t2 are in rfc format"""
+    delta = t2 - t1
+    return abs(24*60*60*delta.days + delta.seconds) < constVar * 60  
+
 ### this gets called when running main
 class MainHandler(webapp.RequestHandler):
     def get(self):
@@ -234,7 +313,6 @@ class MainHandler(webapp.RequestHandler):
         if user: # if logged in
             if not ownerToCalendars.has_key(user.email()): # if user is not registered
                 if calendarClients.has_key(users.get_current_user().email()):
-                    logging.info("has calendar key")
                     calendar_client = calendarClients[users.get_current_user().email()]
                     query = gdata.calendar.client.CalendarEventQuery()
                     query.max_results = 100000
@@ -246,15 +324,12 @@ class MainHandler(webapp.RequestHandler):
                     for url in calurl:
                         urlSplitList = url.split("/")
                         cal_id = urlSplitList[5]
-                        logging.info("cal_id here")
-                        logging.info(cal_id)
                         dictAppend(user.email(), cal_id, ownerToCalendars)
                         dictAppend(cal_id, user.email(), calendarToOwners)
                         logging.info(cal_id)
                         returned_rule = shareDefaultCalendar(calendar_client, cal_id)
                     self.redirect("/")
                 else:
-                    logging.info("calender else")
                     calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
                     calendarClients[users.get_current_user().email()] = calendar_client
                     # if we don't have an access token already, get a request token
@@ -291,7 +366,7 @@ class MainHandler(webapp.RequestHandler):
                         contacts.sort(key = lambda x: x['name'])
                         
 #                        logging.info(calendarClients)
-                        stuffToPrint = findAllEvents('asdfryan123@gmail.com', '6.046 Lecture')
+                        stuffToPrint = findAllEvents('asdfryan123', '6\\.005 Lecture')
                         logging.info("Fuck mendelssohn")
                         logging.info(stuffToPrint)
                         logging.info(len(stuffToPrint))
