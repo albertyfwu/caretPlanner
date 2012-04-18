@@ -224,6 +224,46 @@ def findEventsInContacts(calClient, contactsList, textQuery):
                 
     return output
 
+class RegistrationHandler(webapp.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        if calendarClients.has_key(user.email()):
+            logging.info("has calendar key")
+            calendar_client = calendarClients[user.email()]
+            query = gdata.calendar.client.CalendarEventQuery()
+            query.max_results = 100000
+            
+            feed = calendar_client.GetOwnCalendarsFeed(q = query)
+#            ownerToCalendars[user.email()] = [] # to make sure that an entry is there so it doesn't run infinite loop
+            #for a_calendar in feed.entry:
+            calurl=[a_calendar.content.src for i, a_calendar in enumerate(feed.entry)]
+            for url in calurl:
+                urlSplitList = url.split("/")
+                cal_id = urlSplitList[5]
+                logging.info("cal_id here")
+                logging.info(cal_id)
+                dictAppend(user.email(), cal_id, ownerToCalendars)
+                dictAppend(cal_id, user.email(), calendarToOwners)
+                logging.info(cal_id)
+                returned_rule = shareDefaultCalendar(calendar_client, cal_id)
+            self.redirect("/")
+        else:
+            ownerToCalendars[user.email()] = []
+            logging.info("calender else")
+            calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
+            calendarClients[users.get_current_user().email()] = calendar_client
+            # if we don't have an access token already, get a request token
+            request_token = calendar_client.GetOAuthToken(
+                ['http://www.google.com/calendar/feeds'],
+                calendarCallbackUrl,
+                CONSUMER_KEY2,
+                CONSUMER_SECRET2)
+            
+            # save the token
+            gdata.gauth.AeSave(request_token, 'myCalendarKey')
+            
+            self.redirect(str(request_token.generate_authorization_url()))
+
 ### this gets called when running main
 class MainHandler(webapp.RequestHandler):
     def get(self):
@@ -232,42 +272,46 @@ class MainHandler(webapp.RequestHandler):
             
         user = users.get_current_user()        
         if user: # if logged in
-            if not ownerToCalendars.has_key(user.email()): # if user is not registered
-                if calendarClients.has_key(users.get_current_user().email()):
-                    logging.info("has calendar key")
-                    calendar_client = calendarClients[users.get_current_user().email()]
-                    query = gdata.calendar.client.CalendarEventQuery()
-                    query.max_results = 100000
-                    
-                    feed = calendar_client.GetOwnCalendarsFeed(q = query)
-                    #ownerToCalendars[user.email()] = [] # to make sure that an entry is there so it doesn't run infinite loop
-                    #for a_calendar in feed.entry:
-                    calurl=[a_calendar.content.src for i, a_calendar in enumerate(feed.entry)]
-                    for url in calurl:
-                        urlSplitList = url.split("/")
-                        cal_id = urlSplitList[5]
-                        logging.info("cal_id here")
-                        logging.info(cal_id)
-                        dictAppend(user.email(), cal_id, ownerToCalendars)
-                        dictAppend(cal_id, user.email(), calendarToOwners)
-                        logging.info(cal_id)
-                        returned_rule = shareDefaultCalendar(calendar_client, cal_id)
-                    self.redirect("/")
-                else:
-                    logging.info("calender else")
-                    calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
-                    calendarClients[users.get_current_user().email()] = calendar_client
-                    # if we don't have an access token already, get a request token
-                    request_token = calendar_client.GetOAuthToken(
-                        ['http://www.google.com/calendar/feeds'],
-                        calendarCallbackUrl,
-                        CONSUMER_KEY2,
-                        CONSUMER_SECRET2)
-                    
-                    # save the token
-                    gdata.gauth.AeSave(request_token, 'myCalendarKey')
-                    
-                    self.redirect(str(request_token.generate_authorization_url()))
+            if user.email() not in ownerToCalendars: # if user is not registered
+                # show the user the registration page
+                path = os.path.join(os.path.dirname(__file__), 'registration.html')
+                self.response.out.write(template.render(path, {}))
+#                self.response.out.write('')
+#                if calendarClients.has_key(users.get_current_user().email()):
+#                    logging.info("has calendar key")
+#                    calendar_client = calendarClients[users.get_current_user().email()]
+#                    query = gdata.calendar.client.CalendarEventQuery()
+#                    query.max_results = 100000
+#                    
+#                    feed = calendar_client.GetOwnCalendarsFeed(q = query)
+#                    #ownerToCalendars[user.email()] = [] # to make sure that an entry is there so it doesn't run infinite loop
+#                    #for a_calendar in feed.entry:
+#                    calurl=[a_calendar.content.src for i, a_calendar in enumerate(feed.entry)]
+#                    for url in calurl:
+#                        urlSplitList = url.split("/")
+#                        cal_id = urlSplitList[5]
+#                        logging.info("cal_id here")
+#                        logging.info(cal_id)
+#                        dictAppend(user.email(), cal_id, ownerToCalendars)
+#                        dictAppend(cal_id, user.email(), calendarToOwners)
+#                        logging.info(cal_id)
+#                        returned_rule = shareDefaultCalendar(calendar_client, cal_id)
+#                    self.redirect("/")
+#                else:
+#                    logging.info("calender else")
+#                    calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
+#                    calendarClients[users.get_current_user().email()] = calendar_client
+#                    # if we don't have an access token already, get a request token
+#                    request_token = calendar_client.GetOAuthToken(
+#                        ['http://www.google.com/calendar/feeds'],
+#                        calendarCallbackUrl,
+#                        CONSUMER_KEY2,
+#                        CONSUMER_SECRET2)
+#                    
+#                    # save the token
+#                    gdata.gauth.AeSave(request_token, 'myCalendarKey')
+#                    
+#                    self.redirect(str(request_token.generate_authorization_url()))
             else: ## if user already registered
                 if contactsClients.has_key(users.get_current_user().email()): # if a contacts client is already available for current user
                     # use contact client that's available
@@ -291,7 +335,7 @@ class MainHandler(webapp.RequestHandler):
                         contacts.sort(key = lambda x: x['name'])
                         
 #                        logging.info(calendarClients)
-                        stuffToPrint = findAllEvents('asdfryan123@gmail.com', '6.046 Lecture')
+                        stuffToPrint = findAllEvents('albertyfwu', '6.046 Lecture')
                         logging.info("Fuck mendelssohn")
                         logging.info(stuffToPrint)
                         logging.info(len(stuffToPrint))
@@ -333,7 +377,7 @@ class MainHandler(webapp.RequestHandler):
         self.response.headers['Content-Type'] = 'application/json'
         result = json.dumps({'matches': matches})
         self.response.out.write(result)
-#        
+        
 #class RegistrationHandler
 #    def get(self):
 #        self.response.out.write("hi")
@@ -377,7 +421,8 @@ class MainHandler(webapp.RequestHandler):
 
 class AboutHandler(webapp.RequestHandler):
     def get(self):
-        self.response.out.write()
+        path = os.path.join(os.path.dirname(__file__), 'about.html')
+        self.response.out.write(template.render(path, {}))
         
 class ScheduleEventHandler(webapp.RequestHandler):
     def get(self):
@@ -509,7 +554,7 @@ application = webapp.WSGIApplication(
      ('/api', ApiHandler),
      ('/scheduleEvent', ScheduleEventHandler),
      ('/calendar', CalendarHandler),
-#     ('/registration', RegistrationHandler),
+     ('/registration', RegistrationHandler),
      ('/oauth2callback.*', OAuthHandler),
      ('/oauth2calendarcallback.*', OAuthCalendarHandler)],
     debug=True)
