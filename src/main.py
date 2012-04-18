@@ -131,10 +131,10 @@ def calendarAvailability(calClient, calId, start_date, end_date):
     calendar that is specified by calId. start_date and end_date are in
     RFC 3339 format"""
     
-    query = gdata.calendar.service.CalendarEventQuery(calId, 'private', 'full')
-    query.start_min = start_date
-    query.start_max = end_date
-    feed = calClient.CalendarQuery(q=query)
+    Url = "https://www.google.com/calendar/feeds/"+calId+"/acl/full"
+    
+    query = gdata.calendar.client.CalendarEventQuery(start_min=start_date, start_max=end_date)
+    feed = calClient.CalendarQuery(uri = Url, q=query)
     length = feed.entry.length
     return length == 0
 
@@ -188,13 +188,18 @@ def findEvents(calClient, calId, text_query='Tennis'):
     the Google Calendar API query paramters reference for more info:
     http://code.google.com/apis/calendar/reference.html#Parameters"""
     
-    query = gdata.calendar.service.CalendarEventQuery(calId, 'private', 'full')
-    query.text_query = text_query
-    feed = calClient.GetCalendarEventFeed(q=query)
+    Url = "https://www.google.com/calendar/feeds/"+calId+"/acl/full"
+    query = gdata.calendar.client.CalendarEventQuery(text_query=text_query)
+    feed = calClient.GetCalendarEventFeed(uri = Url, q=query)
     output = []
     
     for an_event in feed.entry:
-        output.append(an_event)
+        logging.info("start an_event for loop")
+        logging.info(an_event.content.text)
+        for when in an_event.when:
+            logging.info(an_event.title.text + " start: " + when.start + " end: " + when.end)
+        ##d = {'start': an_event.start, 'end': an_event.end, 'name': an_event.title.text}
+        #output.append(d)
     
     return output
 
@@ -286,7 +291,7 @@ class MainHandler(webapp.RequestHandler):
                         contacts.sort(key = lambda x: x['name'])
                         
 #                        logging.info(calendarClients)
-                        stuffToPrint = findAllEvents('asdfryan123', '6.046 Lecture')
+                        stuffToPrint = findAllEvents('asdfryan123@gmail.com', '6.046 Lecture')
                         logging.info("Fuck mendelssohn")
                         logging.info(stuffToPrint)
                         logging.info(len(stuffToPrint))
