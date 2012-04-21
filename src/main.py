@@ -648,7 +648,15 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         pass
     def post(self):
         jsonData = json.loads(self.request.get('jsonData'))
-        # jsonData is a dictionary with 
+        startTime = jsonData['startTime'] # in mm/dd/yyyy format
+        endTime = jsonData['endTime'] # in mm/dd/yyyy format
+        friends = jsonData['friends'] # in list format of @gmail.com addresses
+        
+        user = users.get_current_user()
+        logging.info('what is the user')
+        logging.info(user)
+        
+        
         logging.info(jsonData)
         
     
