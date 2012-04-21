@@ -220,7 +220,9 @@ def findEvents(calClient, calId, text_query, start_date, end_date):
             if m2:
                 if className == m2.group(1):
                     start,end = _getWhen(an_event)
-                    d = {'start': start, 'end': end, 'name': an_event.title.text}
+                    d = {'startTime': start,
+                         'endTime': end,
+                         'name': an_event.title.text}
                     output.append(d)
     else:
         return _googleFindEvents(calClient, calId, text_query, start_date, end_date)
@@ -238,7 +240,9 @@ def _googleFindEvents(calClient, calId, text_query, start_date, end_date):
         logging.info("start an_event for loop")
         logging.info(an_event.content.text)
         start, end = _getWhen(an_event)
-        d = {'start': start, 'end': end, 'name': an_event.title.text}
+        d = {'startTime': start,
+             'endTime': end,
+             'name': an_event.title.text}
         output.append(d)
     
     return output
@@ -310,12 +314,16 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
         for calId in ownerToCalendars[email2]:
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
+    logging.info('dinosaurs')
+    
     output = []
     for an_event in eventList1:
         for an_event2 in eventList2:
             result = compareEvents(an_event, an_event2, constVar)
             if result:
-                d = {'name': an_event2.title.text, 'start': result[0], 'end': result[1]}
+                d = {'name': an_event2.title.text,
+                     'startTime': result[0],
+                     'endTime': result[1]}
                 output.append(d)
     return output
                         
@@ -725,7 +733,9 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         logging.info(commonEvents)
         
         
-        
+        self.response.headers['Content-Type'] = 'application/json'
+        result = json.dumps(commonEvents)
+        self.response.out.write(result)
 #        logging.info(jsonData)
         
     
@@ -733,6 +743,7 @@ class FindCommonTimesHandler(webapp.RequestHandler):
     def get(self):
         pass
     def post(self):
+        # look at FindCommonEventsHandler's post(self): for an example
         pass
 
 application = webapp.WSGIApplication(

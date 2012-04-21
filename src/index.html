@@ -59,7 +59,28 @@
 						</div>
 					</div>
 					<div id="tabs-2">
-						Schedule an Event
+						First, select the friends on the left you'd like to find good times with. Then, let us know the time range you'd like to look in (c)urrently defaulted to between 1pm and 5pm).
+						<br />
+						Start: <input type="text"  value="" class="datePicker" id="timesStartTime" />
+						<br />
+						End: <input type="text" value="" class="datePicker" id="timesEndtime" />
+						<br />
+						<input type="submit" id="findTimesButton" value="Go" />
+						<div id="findTimesResultsDiv">
+							Results:
+							<table width="100%">
+								<tr>
+									<td>Event Name</td>
+									<td>Start Time</td>
+									<td>End Time</td>
+								</tr>
+								<tr>
+									<td>asdf</td>
+									<td>asdf</td>
+									<td>asdf</td>
+								</tr>
+							</table>
+						</div>
 					</div>
 				</div>
 				
@@ -201,8 +222,34 @@
 						html += '<td>' + data.endTime + '</td>';
 						html += '</tr>';
 					});
-					html += '</html>'
+					html += '</table>'
 					$("#findEventsResultsDiv").html(html);
+				});
+			});
+			
+			$("#findTimesButton").click(function() {
+				var startTime = $("#timesStartTime").val();
+				var endTime = $("#timesEndtime").val();
+				var friends = [];
+				$(".contact:checked").each(function() {
+					friends.push($(this).val());
+				});
+				var query = {startTime: startTime,
+							 endTime: endTime,
+							 friends: friends}
+				// post the jQuery to the backend for results
+				
+				$.post('/findCommonTimes', {jsonData: JSON.stringify(query)}, function(data) {
+					var html = 'Results:<table>';
+					$(data).each(function() {
+						html += '<tr>';
+						html += '<td>' + data.name + '</td>';
+						html += '<td>' + data.startTime + '</td>';
+						html += '<td>' + data.endTime + '</td>';
+						html += '</tr>';
+					});
+					html += '</table>'
+					$("#findTimesResultsDiv").html(html);
 				});
 			});
 		</script>
