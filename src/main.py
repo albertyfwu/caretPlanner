@@ -264,7 +264,35 @@ def findEventsInContacts(calClient, contactsList, textQuery):
                 
     return output
 
-def findCommonEvents(calClient, email1, email2, start_date, end_date, constVar = 5):
+def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
+    """ Requires emailList to have at least two emails
+    start_date and end_date are in RFC3339 format
+    constVar is how many minutes they can be late/leave early"""
+    
+    tempOutput = findCommonEventsTwoPeople(calClient, emailList[0], emailList[1], start_date, end_date, constVar = 5)
+    if len(emailList) == 2:
+        return tempOutput
+    else:
+        for i in range(2, len(emailList)):
+            if emailList[i] in ownerToCalendars:
+                for calId in ownerToCalendars[emailList[i]]:
+                    eventList = _getEvents(calClient, calId, start_date, end_date)
+                    
+                    output = []
+                    
+                    for an_event in tempOutput:
+                        for an_event2 in eventList:
+                            result = compareEvents(an_event, an_event2, constVar)
+                            if result:
+                                d = {'Name': an_event2.title.text, 'Start': result[0], 'End': result[1]}
+                                output.append(d)
+            
+            tempOutput = output
+            if tempOutput == []:
+                return []
+        return tempOutput
+        
+def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, constVar = 5):
     """start_date and end_date are RFC3339 format"""
     eventList1 = []
     eventList2 = []
@@ -284,6 +312,7 @@ def findCommonEvents(calClient, email1, email2, start_date, end_date, constVar =
             result = compareEvents(an_event, an_event2, constVar)
             if result:
                 d = {'Name': an_event2.title.text, 'Start': result[0], 'End': result[1]}
+                output.append(d)
     return output
                         
 
