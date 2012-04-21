@@ -155,6 +155,7 @@ def contactAvailability(calClient, calList, start_date, end_date):
             return False
     return True
 
+
 def FindTimes (calClient, contactsList, start_time, end_time, start_date, duration, date_duration = 14):
     """
     start_time and end_time are of types datetime.time
@@ -185,33 +186,53 @@ def FindTimes (calClient, contactsList, start_time, end_time, start_date, durati
             output.append(key)
             
     return output
-        
-def findEvents(calClient, calId, text_query='Tennis'):
-    """Retrieves events from the calendar which match the specified full-text
-    query.  The full-text query searches the title and content of an event,
-    but it does not search the value of extended properties at the time of
-    this writing.  It uses the default (primary) calendar of the authenticated
-    user and uses the private visibility/full projection feed.  Please see:
-    http://code.google.com/apis/calendar/reference.html#Feeds
-    for more information on the feed types.  Note: as we're not specifying
-    any query parameters other than the full-text query, recurring events
-    returned will not have gd:when elements in the response.  Please see
-    the Google Calendar API query paramters reference for more info:
-    http://code.google.com/apis/calendar/reference.html#Parameters"""
+
+def findEvents(calClient, calId, text_query, start_date, end_date):
+    """
+    calClient - calendarClient
+    calId - URL id of calendar
+    text_query - any string (Ex: 6.046, zoo trip, piano)
+    start_date - date in RFC format (Ex: 2010-10-01T10:00:00-04:00)
+    end_date - date in RFC format
+    """
+    
+    p = re.compile('.*(\d+\w?.\d+\w?).*')
+    m = p.match(text_query)
+    if m:
+        output = []
+        className = m.group(1)
+        eventfeed = getEvents(calClient, calId, start_date, end_date)
+        for an_event in eventfeed.entry:
+            m2 = p.match(an_event.title.text)
+            if m2:
+                if className == m2.group(1):
+                    start,end = getWhen(an_event)
+                    d = {'start': start, 'end': end, 'name': an_event.title.text}
+                    output.append(d)
+    else:
+        return googleFindEvents(calClient, calId, text_query, start_date, end_date)
+    
+def googleFindEvents(calClient, calId, text_query, start_date, end_date):
+    """ Uses google's search function to find events with similar names.
+    Does not work for class names for some reason"""
     
     Url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
-    query = gdata.calendar.client.CalendarEventQuery(text_query=text_query)
+    query = gdata.calendar.client.CalendarEventQuery(text_query=text_query, start_min=start_date, start_max=end_date)
     feed = calClient.GetCalendarEventFeed(uri = Url, q=query)
     output = []
     
     for an_event in feed.entry:
         logging.info("start an_event for loop")
         logging.info(an_event.content.text)
-        first = an_event.when[0]
-        d = {'start': first.start, 'end': first.end, 'name': an_event.title.text}
+        start, end = getWhen(an_event)
+        d = {'start': start, 'end': end, 'name': an_event.title.text}
         output.append(d)
     
     return output
+
+def getWhen(an_event):
+    first = an_event.when[0]
+    return first.start, first.end
 
 def findAllEvents(username, text_query):
     logging.info("jsbach")
@@ -267,7 +288,7 @@ def compareEvents(event1, event2, var):
                     return (when2.start, when2.end)
         return False
 def stringMatching(str1, str2):
-    p = re.compile('^\d+.\d+')
+    p = re.compile('^\d+\w?.\d+\w?')
     m1 = p.match(str1)
     m2 = p.match(str2)
     if m1 and m2:
