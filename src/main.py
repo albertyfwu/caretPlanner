@@ -207,16 +207,9 @@ def findEvents(calClient, calId, text_query='Tennis'):
     for an_event in feed.entry:
         logging.info("start an_event for loop")
         logging.info(an_event.content.text)
-        for when in an_event.when:
-            logging.info(an_event.title.text + " start: " + when.start + " end: " + when.end)
-        ##d = {'start': an_event.start, 'end': an_event.end, 'name': an_event.title.text}
-        #output.append(d)
-        for i, an_event in zip(xrange(len(feed.entry)), feed.entry):
-            logging.info('\t%s. %s' % (i, an_event.title.text,))
-            logging.info('\t\t%s. %s' % (i, an_event.content.text,))
-            for a_when in an_event.when:
-                logging.info('\t\tStart time: %s' % (a_when.start,))
-                logging.info('\t\tEnd time:   %s' % (a_when.end,))
+        first = an_event.when[0]
+        d = {'start': first.start, 'end': first.end, 'name': an_event.title.text}
+        output.append(d)
     
     return output
 
