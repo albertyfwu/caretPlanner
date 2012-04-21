@@ -299,13 +299,7 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
     """start_date and end_date are RFC3339 format"""
     eventList1 = []
     eventList2 = []
-    
-    logging.info("emails")
-    logging.info(email1 + " " + email2)
-    logging.info("keys")
-    logging.info(ownerToCalendars.keys())
     if email1 in ownerToCalendars:
-        logging.info("first if statement")
         for calId in ownerToCalendars[email1]:
             eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
                               
@@ -315,10 +309,8 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
     output = []
-    logging.info("lengths")
     for an_event in eventList1:
         for an_event2 in eventList2:
-            logging.info("for for loop")
             result = compareEvents(an_event, an_event2, constVar)
             if result:
                 d = {'name': an_event2.title.text, 'start': result[0], 'end': result[1]}
@@ -330,14 +322,9 @@ def compareEvents(event1, event2, var):
     if not stringMatching(event1.title.text, event2.title.text):
         return False
     else:
-        logging.info('MATCH MATCH MATCH MATCH')
-        logging.info(event1.title.text)
         for when in event1.when:
             for when2 in event2.when:
-                logging.info(when.start)
-                logging.info(when2.start)
                 if compareTimes(when.start, when2.start, var) and compareTimes(when.end, when2.end, var):
-                    logging.info('BEST MATCH BEST MATCH BEST MATCH')
                     return (when2.start, when2.end)
         return False
     
