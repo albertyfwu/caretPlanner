@@ -102,8 +102,9 @@ def RetrieveAclRule(username, calClient, cal_id):
     entry = calClient.GetCalendarAclEntry(aclEntryUri)
     return entry
 
-def updateDefaultACL(calClient, cal_id):
-    """Updates the Access Control Rule for the overlord account for the user's default calendar"""
+def updateAcl(calClient, cal_id):
+    """Updates the Access Control Rule for the overlord account for the calendar with the given
+    calendar id cal_id"""
     try:
         entry = RetrieveAclRule("socialplanner21@gmail.com", calClient, cal_id)
         roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
@@ -111,6 +112,16 @@ def updateDefaultACL(calClient, cal_id):
         return calClient.Update(entry)
     except:
         return None
+    
+def removeAcl(calClient, cal_id):
+    """Updates the Access Control Rule for the overlord account so that the the calendar
+    with the given cal_id is removed from access"""
+    try:
+        entry = RetrieveAclRule("socialplanner21@gmail.com", calClient, cal_id)
+        calClient.Delete(entry.GetEditLink().href)
+    except:
+        return None
+    
 def shareDefaultCalendar(calClient, cal_id):
     """Shares the user's default calendar with the overlord account. First, it tries to add a new
     access control rule for the overlord account. If it is already there, then it tries to update 
@@ -125,7 +136,7 @@ def shareDefaultCalendar(calClient, cal_id):
         aclUrl = "https://www.google.com/calendar/feeds/"+cal_id+"/acl/full"
         return calClient.InsertAclEntry(rule, aclUrl)
     except gdata.client.RequestError:
-        return updateDefaultACL(calClient, cal_id)
+        return updateAcl(calClient, cal_id)
 
 def getEvents(calClient, calId, start_date, end_date): 
     """Returns list of events in the calendar that is between
