@@ -146,7 +146,7 @@ def _getEvents(calClient, calId, start_date, end_date):
     
     Url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
     query = gdata.calendar.client.CalendarEventQuery(start_min=start_date, start_max=end_date)
-    feed = calClient.CalendarQuery(uri = Url, q=query)
+    feed = calClient.GetCalendarEventFeed(uri = Url, q=query)
     return feed.entry
     
     
@@ -158,7 +158,7 @@ def _calendarAvailability(calClient, calId, start_date, end_date):
     Url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
     
     query = gdata.calendar.client.CalendarEventQuery(start_min=start_date, start_max=end_date)
-    feed = calClient.CalendarQuery(uri = Url, q=query)
+    feed = calClient.GetCalendarEventFeed(uri = Url, q=query)
     length = feed.entry.length
     return length == 0
 
@@ -269,42 +269,39 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
     start_date and end_date are in RFC3339 format
     constVar is how many minutes they can be late/leave early"""
     
-    tempOutput = findCommonEventsTwoPeople(calClient, emailList[0], emailList[1], start_date, end_date, constVar = 5)
-    if len(emailList) == 2:
-        return tempOutput
+    if len(emailList) < 2:
+        return None
     else:
-        for i in range(2, len(emailList)):
-            if emailList[i] in ownerToCalendars:
-                for calId in ownerToCalendars[emailList[i]]:
-                    eventList = _getEvents(calClient, calId, start_date, end_date)
-                    
-                    output = []
-                    
-                    for an_event in tempOutput:
-                        for an_event2 in eventList:
-                            result = compareEvents(an_event, an_event2, constVar)
-                            if result:
-                                d = {'name': an_event2.title.text,
-                                     'startTime': result[0],
-                                     'endTime': result[1]}
-                                output.append(d)
-            
-            tempOutput = output
-            if tempOutput == []:
-                return []
-        return tempOutput
+        tempOutput = findCommonEventsTwoPeople(calClient, emailList[0], emailList[1], start_date, end_date, constVar = 5)
+        if len(emailList) == 2:
+            return tempOutput
+        else:
+            for i in range(2, len(emailList)):
+                if emailList[i] in ownerToCalendars:
+                    for calId in ownerToCalendars[emailList[i]]:
+                        eventList = _getEvents(calClient, calId, start_date, end_date)
+                        
+                        output = []
+                        
+                        for an_event in tempOutput:
+                            for an_event2 in eventList:
+                                result = compareEvents(an_event, an_event2, constVar)
+                                if result:
+                                    d = {'name': an_event2.title.text,
+                                         'startTime': result[0],
+                                         'endTime': result[1]}
+                                    output.append(d)
+                
+                tempOutput = output
+                if tempOutput == []:
+                    return []
+            return tempOutput
         
 def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, constVar = 5):
     """start_date and end_date are RFC3339 format"""
     eventList1 = []
     eventList2 = []
-    
-    logging.info("emails")
-    logging.info(email1 + " " + email2)
-    logging.info("keys")
-    logging.info(ownerToCalendars.keys())
     if email1 in ownerToCalendars:
-        logging.info("first if statement")
         for calId in ownerToCalendars[email1]:
             eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
                               
@@ -314,12 +311,11 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
     output = []
-    
     for an_event in eventList1:
         for an_event2 in eventList2:
             result = compareEvents(an_event, an_event2, constVar)
             if result:
-                d = {'Name': an_event2.title.text, 'Start': result[0], 'End': result[1]}
+                d = {'name': an_event2.title.text, 'start': result[0], 'end': result[1]}
                 output.append(d)
     return output
                         
@@ -352,16 +348,18 @@ def rfcTodateTime(rfc):
     # ignore seconds
     
     length = len(rfc)
-    if rfc[length-1] == 'z':
+    if rfc[length-1] == 'z' or rfc[length-1] == 'Z':
         return datetime.datetime(year, month, day, hour, minute)
     else:
-        hour += int(rfc[length-6:length-3])
+        hour -= int(float(rfc[length-6:length-3]))
         return datetime.datetime(year, month, day, hour, minute)
 
 
 def compareTimes(t1, t2, constVar):
     """t1 and t2 are in rfc format"""
-    delta = t2 - t1
+    d1 = rfcTodateTime(t1)
+    d2 = rfcTodateTime(t2)
+    delta = d2 - d1
     return abs(24*60*60*delta.days + delta.seconds) < constVar * 60  
 
 class RegistrationHandler(webapp.RequestHandler):
@@ -386,9 +384,12 @@ class RegistrationHandler(webapp.RequestHandler):
                 dictAppend(cal_id, user.email(), calendarToOwners)
                 logging.info(cal_id)
                 returned_rule = shareDefaultCalendar(calendar_client, cal_id)
+            logging.info("dictionary")
+            logging.info(ownerToCalendars)
             self.redirect("/")
         else:
-            ownerToCalendars[user.email()] = []
+            if user.email() not in ownerToCalendars:
+                ownerToCalendars[user.email()] = []
             logging.info("calender else")
             calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
             calendarClients[users.get_current_user().email()] = calendar_client
@@ -653,7 +654,7 @@ class OAuthCalendarHandler(webapp.RequestHandler):
         client.auth_token = gdata.gauth.OAuthHmacToken(
         CONSUMER_KEY2, CONSUMER_SECRET2, access_token.token, access_token.token_secret, gdata.gauth.ACCESS_TOKEN)
 
-        self.redirect('/')
+        self.redirect('/registration')
 
 class OAuthHandler(webapp.RequestHandler):
     def get(self):
