@@ -297,11 +297,17 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
     eventList1 = []
     eventList2 = []
     
+    logging.info("emails")
+    logging.info(email1 + " " + email2)
+    logging.info("keys")
+    logging.info(ownerToCalendars.keys())
     if email1 in ownerToCalendars:
+        logging.info("first if statement")
         for calId in ownerToCalendars[email1]:
             eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
                               
     if email2 in ownerToCalendars:
+        logging.info("second if statement")
         for calId in ownerToCalendars[email2]:
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
@@ -681,6 +687,7 @@ def textDateToRfc(stringDate):
                                iList[0],
                                iList[1])
     
+    return rfc3339(pythonDate)
 
 class FindCommonEventsHandler(webapp.RequestHandler):
     def get(self):
@@ -693,17 +700,30 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         
         user = users.get_current_user()
         
-        email1 = user.email() + "@gmail.com"
+        email1 = user.email()
+        emailList = [friend[0:-len('@gmail.com')] for friend in friends]
+        emailList.append(email1)
         
         rfcStartTime = textDateToRfc(startTime)
         rfcEndTime = textDateToRfc(endTime)
         
+        logging.info('emailList')
+        logging.info(emailList)
+        logging.info(rfcStartTime)
+        logging.info(rfcEndTime)
+        logging.info('endEmailList')
+        
+        commonEvents = findCommonEvents(overlordCalClient, emailList, rfcStartTime, rfcEndTime)
+        
         logging.info('what is the user')
         logging.info(user)
         
+        logging.info('what are the events')
+        logging.info(commonEvents)
         
         
-        logging.info(jsonData)
+        
+#        logging.info(jsonData)
         
     
 class FindCommonTimesHandler(webapp.RequestHandler):
