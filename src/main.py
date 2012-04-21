@@ -284,7 +284,9 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
                         for an_event2 in eventList:
                             result = compareEvents(an_event, an_event2, constVar)
                             if result:
-                                d = {'Name': an_event2.title.text, 'Start': result[0], 'End': result[1]}
+                                d = {'name': an_event2.title.text,
+                                     'startTime': result[0],
+                                     'endTime': result[1]}
                                 output.append(d)
             
             tempOutput = output

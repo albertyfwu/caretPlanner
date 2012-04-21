@@ -11,7 +11,7 @@
 			$("#content").tabs();
 			$(".datePicker").datepicker();
 		});
-		</script>		
+		</script>
 	</head>
 	<body>
 		<div id="wrap">
@@ -42,6 +42,21 @@
 						End: <input type="text" value="" class="datePicker" id="eventsEndtime" />
 						<br />
 						<input type="submit" id="findEventsButton" value="Go" />
+						<div id="findEventsResultsDiv">
+							Results:
+							<table width="100%">
+								<tr>
+									<td>Event Name</td>
+									<td>Start Time</td>
+									<td>End Time</td>
+								</tr>
+								<tr>
+									<td>asdf</td>
+									<td>asdf</td>
+									<td>asdf</td>
+								</tr>
+							</table>
+						</div>
 					</div>
 					<div id="tabs-2">
 						Schedule an Event
@@ -176,12 +191,18 @@
 							 endTime: endTime,
 							 friends: friends}
 				// post the jQuery to the backend for results
+				
 				$.post('/findCommonEvents', {jsonData: JSON.stringify(query)}, function(data) {
-// 					result = 'Matches:<br /><br />';
-// 					$.each(data.matches, function(i, match) {
-// 						result += match + '<br />';
-// 					});
-// 					$("#seethis").html(result);
+					var html = 'Results:<table>';
+					$(data).each(function() {
+						html += '<tr>';
+						html += '<td>' + data.name + '</td>';
+						html += '<td>' + data.startTime + '</td>';
+						html += '<td>' + data.endTime + '</td>';
+						html += '</tr>';
+					});
+					html += '</html>'
+					$("#findEventsResultsDiv").html(html);
 				});
 			});
 		</script>
