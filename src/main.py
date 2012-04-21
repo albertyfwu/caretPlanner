@@ -743,6 +743,11 @@ class FindCommonTimesHandler(webapp.RequestHandler):
     def get(self):
         pass
     def post(self):
+        jsonData = json.loads(self.request.get('jsonData'))
+        startDate = jsonData['startDate'] # in mm/dd/yyyy format
+        endDate = jsonData['endDate'] # in mm/dd/yyyy format
+        friends = jsonData['friends'] # in list format of @gmail.com addresses
+        
         # look at FindCommonEventsHandler's post(self): for an example
         pass
 

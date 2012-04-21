@@ -61,9 +61,9 @@
 					<div id="tabs-2">
 						First, select the friends on the left you'd like to find good times with. Then, let us know the time range you'd like to look in (c)urrently defaulted to between 1pm and 5pm).
 						<br />
-						Start: <input type="text"  value="" class="datePicker" id="timesStartTime" />
+						Start: <input type="text"  value="" class="datePicker" id="timesStartDate" />
 						<br />
-						End: <input type="text" value="" class="datePicker" id="timesEndtime" />
+						End: <input type="text" value="" class="datePicker" id="timesEndDate" />
 						<br />
 						<input type="submit" id="findTimesButton" value="Go" />
 						<div id="findTimesResultsDiv">
@@ -228,14 +228,14 @@
 			});
 			
 			$("#findTimesButton").click(function() {
-				var startTime = $("#timesStartTime").val();
-				var endTime = $("#timesEndtime").val();
+				var startDate = $("#timesStartDate").val();
+				var endDate = $("#timesEndDate").val();
 				var friends = [];
 				$(".contact:checked").each(function() {
 					friends.push($(this).val());
 				});
-				var query = {startTime: startTime,
-							 endTime: endTime,
+				var query = {startDate: startDate,
+							 endDate: endDate,
 							 friends: friends}
 				// post the jQuery to the backend for results
 				
