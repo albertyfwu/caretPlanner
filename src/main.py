@@ -644,6 +644,15 @@ class SignOutHandler(webapp.RequestHandler):
         if users.get_current_user().email() in calendarClients:
             del calendarClients[users.get_current_user().email()]
 
+# takes a string date like '08/20/2012' and converts it into RFC format
+def textDateToRfc(stringDate):
+    sList = stringDate.split('/')
+    iList = [int(entry) for entry in sList]
+    pythonDate = datetime.date(iList[2],
+                               iList[0],
+                               iList[1])
+    
+
 class FindCommonEventsHandler(webapp.RequestHandler):
     def get(self):
         pass
@@ -657,6 +666,8 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         
         email1 = user.email() + "@gmail.com"
         
+        rfcStartTime = textDateToRfc(startTime)
+        rfcEndTime = textDateToRfc(endTime)
         
         logging.info('what is the user')
         logging.info(user)
