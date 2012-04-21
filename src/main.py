@@ -406,8 +406,8 @@ class MainHandler(webapp.RequestHandler):
                         
                         contacts.sort(key = lambda x: x['name'])
                         
-#                        logging.info(calendarClients)
-                        stuffToPrint = findAllEvents('asdfryan123', '6\\.005 Lecture')
+                        logging.info(calendarClients)
+                        stuffToPrint = findAllEvents('albertyfwu', '6\\.005 Lecture')
                         logging.info("Fuck mendelssohn")
                         logging.info(stuffToPrint)
                         logging.info(len(stuffToPrint))
@@ -620,6 +620,21 @@ class SignOutHandler(webapp.RequestHandler):
         if users.get_current_user().email() in calendarClients:
             del calendarClients[users.get_current_user().email()]
 
+class FindCommonEventsHandler(webapp.RequestHandler):
+    def get(self):
+        pass
+    def post(self):
+        jsonData = json.loads(self.request.get('jsonData'))
+        # jsonData is a dictionary with 
+        logging.info(jsonData)
+        
+    
+class FindCommonTimesHandler(webapp.RequestHandler):
+    def get(self):
+        pass
+    def post(self):
+        pass
+
 application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
@@ -628,7 +643,9 @@ application = webapp.WSGIApplication(
      ('/calendar', CalendarHandler),
      ('/registration', RegistrationHandler),
      ('/oauth2callback.*', OAuthHandler),
-     ('/oauth2calendarcallback.*', OAuthCalendarHandler)],
+     ('/oauth2calendarcallback.*', OAuthCalendarHandler),
+     ('/findCommonEvents', FindCommonEventsHandler),
+     ('/findCommonTimes', FindCommonTimesHandler)],
     debug=True)
 
 def main():
