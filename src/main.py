@@ -57,6 +57,8 @@ ownerToCalendars = {} # string owner email address -- > list of calendar IDs
 calendarToOwners = {} # string calendar IDs --> list of owners
 sharedToCalendars = {} # string email address --> list of calendar IDs he is shared with
 
+overlordCalClient = gdata.calendar.client.CalendarClient(source = 'caretPlanner')
+overlordCalClient.ClientLogin('socialplanner21@gmail.com', 'social21w785', overlordCalClient.source);
 ### Helper Functions for Dictionary Handling
 def getCalendarOwners(CalID):
     if CalID in calendarToOwners:
@@ -92,7 +94,7 @@ def dictAdd(key, value, d):
     else:
         d[key] = value
 
-def RetrieveAclRule(username, calClient, cal_id):
+def _RetrieveAclRule(username, calClient, cal_id):
     """Retrieves the entry associated with the Access Control Rule of the given username for
     the primary calendar of the calClient"""
 
@@ -106,7 +108,7 @@ def updateAcl(calClient, cal_id):
     """Updates the Access Control Rule for the overlord account for the calendar with the given
     calendar id cal_id"""
     try:
-        entry = RetrieveAclRule("socialplanner21@gmail.com", calClient, cal_id)
+        entry = _RetrieveAclRule("socialplanner21@gmail.com", calClient, cal_id)
         roleValue = "http://schemas.google.com/gCal/2005#%s" % ("read")
         entry.role = gdata.acl.data.AclRole(value=roleValue)
         return calClient.Update(entry)
@@ -117,7 +119,7 @@ def removeAcl(calClient, cal_id):
     """Updates the Access Control Rule for the overlord account so that the the calendar
     with the given cal_id is removed from access"""
     try:
-        entry = RetrieveAclRule("socialplanner21@gmail.com", calClient, cal_id)
+        entry = _RetrieveAclRule("socialplanner21@gmail.com", calClient, cal_id)
         calClient.Delete(entry.GetEditLink().href)
     except:
         return None
@@ -138,7 +140,7 @@ def shareDefaultCalendar(calClient, cal_id):
     except gdata.client.RequestError:
         return updateAcl(calClient, cal_id)
 
-def getEvents(calClient, calId, start_date, end_date): 
+def _getEvents(calClient, calId, start_date, end_date): 
     """Returns list of events in the calendar that is between
     start_date and end_date, which are both in RFC3339 format"""
     
@@ -148,7 +150,7 @@ def getEvents(calClient, calId, start_date, end_date):
     return feed.entry
     
     
-def calendarAvailability(calClient, calId, start_date, end_date):
+def _calendarAvailability(calClient, calId, start_date, end_date):
     """Returns true if and only if # events within the time frame is 0 in
     calendar that is specified by calId. start_date and end_date are in
     RFC 3339 format"""
@@ -162,7 +164,7 @@ def calendarAvailability(calClient, calId, start_date, end_date):
 
 def contactAvailability(calClient, calList, start_date, end_date):
     for calId in calList:
-        if calendarAvailability(calClient, calId, start_date, end_date) == False:
+        if _calendarAvailability(calClient, calId, start_date, end_date) == False:
             return False
     return True
 
@@ -212,18 +214,18 @@ def findEvents(calClient, calId, text_query, start_date, end_date):
     if m:
         output = []
         className = m.group(1)
-        eventfeed = getEvents(calClient, calId, start_date, end_date)
+        eventfeed = _getEvents(calClient, calId, start_date, end_date)
         for an_event in eventfeed.entry:
             m2 = p.match(an_event.title.text)
             if m2:
                 if className == m2.group(1):
-                    start,end = getWhen(an_event)
+                    start,end = _getWhen(an_event)
                     d = {'start': start, 'end': end, 'name': an_event.title.text}
                     output.append(d)
     else:
-        return googleFindEvents(calClient, calId, text_query, start_date, end_date)
+        return _googleFindEvents(calClient, calId, text_query, start_date, end_date)
     
-def googleFindEvents(calClient, calId, text_query, start_date, end_date):
+def _googleFindEvents(calClient, calId, text_query, start_date, end_date):
     """ Uses google's search function to find events with similar names.
     Does not work for class names for some reason"""
     
@@ -235,23 +237,19 @@ def googleFindEvents(calClient, calId, text_query, start_date, end_date):
     for an_event in feed.entry:
         logging.info("start an_event for loop")
         logging.info(an_event.content.text)
-        start, end = getWhen(an_event)
+        start, end = _getWhen(an_event)
         d = {'start': start, 'end': end, 'name': an_event.title.text}
         output.append(d)
     
     return output
 
-def getWhen(an_event):
+def _getWhen(an_event):
     first = an_event.when[0]
     return first.start, first.end
 
-def findAllEvents(username, text_query):
-    logging.info("jsbach")
-    logging.info(calendarClients)
+def findEventsUser(username, text_query):
     calClient = calendarClients[username]
     output = []
-    logging.info("dvorak")
-    logging.info(ownerToCalendars)
     for calId in ownerToCalendars[username]:
         output.extend(findEvents(calClient, calId, text_query))
         
@@ -273,11 +271,11 @@ def findCommonEvents(calClient, email1, email2, start_date, end_date, constVar =
     
     if email1 in ownerToCalendars:
         for calId in ownerToCalendars[email1]:
-            eventList1.extend(getEvents(calClient, calId, start_date, end_date))
+            eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
                               
     if email2 in ownerToCalendars:
         for calId in ownerToCalendars[email2]:
-            eventList2.extend(getEvents(calClient, calId, start_date, end_date))
+            eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
     output = []
     
@@ -438,13 +436,6 @@ class MainHandler(webapp.RequestHandler):
         #                        result += '<br />'
                         
                         contacts.sort(key = lambda x: x['name'])
-                        
-                        logging.info(calendarClients)
-                        stuffToPrint = findAllEvents('albertyfwu', '6\\.005 Lecture')
-                        logging.info("Fuck mendelssohn")
-                        logging.info(stuffToPrint)
-                        logging.info(len(stuffToPrint))
-                        logging.info("end fuck mendelssohn")
                 
         #                self.response.out.write(result)
                         template_values = {
