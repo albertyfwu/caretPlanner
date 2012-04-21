@@ -298,6 +298,7 @@ def compareEvents(event1, event2, var):
                 if compareTimes(when.start, when2.start, var) and compareTimes(when.end, when2.end, var):
                     return (when2.start, when2.end)
         return False
+    
 def stringMatching(str1, str2):
     p = re.compile('^\d+\w?.\d+\w?')
     m1 = p.match(str1)
@@ -662,8 +663,13 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         friends = jsonData['friends'] # in list format of @gmail.com addresses
         
         user = users.get_current_user()
+        
+        email1 = user.email() + "@gmail.com"
+        
+        
         logging.info('what is the user')
         logging.info(user)
+        
         
         
         logging.info(jsonData)
