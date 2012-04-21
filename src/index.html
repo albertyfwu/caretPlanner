@@ -9,6 +9,7 @@
 		<script>
 		$(document).ready(function() {
 			$("#content").tabs();
+			$(".datePicker").datepicker();
 		});
 		</script>		
 	</head>
@@ -34,7 +35,13 @@
 						style="border-width:0" width="100%" height="90%" frameborder="0" scrolling="no"></iframe>
 					</div>
 					<div id="tabs-1">
-						Find Events
+						First, select the friends on the left you'd like to find common events with. Then, let us know the time range you'd like to look in.
+						<br />
+						Start: <input type="text"  value="" class="datePicker" id="eventsStartTime" />
+						<br />
+						End: <input type="text" value="" class="datePicker" id="eventsEndtime" />
+						<br />
+						<input type="submit" id="findEventsButton" value="Go" />
 					</div>
 					<div id="tabs-2">
 						Schedule an Event
@@ -48,7 +55,7 @@
 										
 					<div id="contacts">
 						{% for contact in contacts %}
-							<input type="checkbox" value="{{ contact.email }}">{{ contact.name }}<br />
+							<input class="contact" type="checkbox" value="{{ contact.email }}">{{ contact.name }}<br />
 						{% endfor %}
 					</div>
 					<div id="circleButtons">
@@ -158,6 +165,25 @@
 				});
 			});
 			
+			$("#findEventsButton").click(function() {
+				var startTime = $("#eventsStartTime").val();
+				var endTime = $("#eventsEndtime").val();
+				var friends = [];
+				$(".contact:checked").each(function() {
+					friends.push($(this).val());
+				});
+				var query = {startTime: startTime,
+							 endTime: endTime,
+							 friends: friends}
+				// post the jQuery to the backend for results
+				$.post('/findCommonEvents', {jsonData: JSON.stringify(query)}, function(data) {
+// 					result = 'Matches:<br /><br />';
+// 					$.each(data.matches, function(i, match) {
+// 						result += match + '<br />';
+// 					});
+// 					$("#seethis").html(result);
+				});
+			});
 		</script>
 	</body>
 </html>
