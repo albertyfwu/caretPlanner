@@ -379,7 +379,7 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
     eventList1 = []
     eventList2 = []
     if email1 in ownerToCalendars:
-        for calId in ownerToCalendars[email1][0:1]:
+        for calId in ownerToCalendars[email1]:
             # try threading to remove bottleneck?
 #            def extendEventList1():
             eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
@@ -387,7 +387,7 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
 #            eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
                               
     if email2 in ownerToCalendars:
-        for calId in ownerToCalendars[email2][0:1]:
+        for calId in ownerToCalendars[email2]:
             # try threading to remove bottleneck?
 #            def extendEventList2():
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
