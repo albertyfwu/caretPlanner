@@ -79,14 +79,10 @@ def getOwnedCalendars(userAddress):
         return None
     
 def dictAppend(key, value, d):
-    logging.info("dictAppend before")
-    logging.info(d)
     if key in d and d[key] != None:
         d[key].append(value)
     else:
         d[key] = [value]
-    logging.info("dictAppend after")
-    logging.info(d)
         
 def dictAdd(key, value, d):
     if key in d and d[key] != None:
@@ -238,8 +234,6 @@ def _googleFindEvents(calClient, calId, text_query, start_date, end_date):
     output = []
     
     for an_event in feed.entry:
-        logging.info("start an_event for loop")
-        logging.info(an_event.content.text)
         start, end = _getWhen(an_event)
         d = {'startTime': start,
              'endTime': end,
@@ -279,15 +273,19 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
     else:
         tempOutput = findCommonEventsTwoPeople(calClient, emailList[0], emailList[1], start_date, end_date, constVar = 5)
         if len(emailList) == 2:
-            return tempOutput
+            output = []
+            for event in tempOutput:
+                d = {'name': event.title.text,
+                     'startTime': event.when[0].start,
+                     'endTime': event.when[0].end}
+                output.append(d)
+            return output
         else:
             for i in range(2, len(emailList)):
+                output = []
                 if emailList[i] in ownerToCalendars:
                     for calId in ownerToCalendars[emailList[i]]:
                         eventList = _getEvents(calClient, calId, start_date, end_date)
-                        
-                        output = []
-                        
                         for an_event in tempOutput:
                             for an_event2 in eventList:
                                 result = compareEvents(an_event, an_event2, constVar)
@@ -296,7 +294,7 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
                                          'startTime': result[0],
                                          'endTime': result[1]}
                                     output.append(d)
-                
+                                                    
                 tempOutput = output
                 if tempOutput == []:
                     return []
@@ -311,7 +309,6 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
             eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
                               
     if email2 in ownerToCalendars:
-        logging.info("second if statement")
         for calId in ownerToCalendars[email2]:
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
@@ -319,15 +316,9 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
     
     for an_event in eventList1:
         for an_event2 in eventList2:
-#            logging.info("for for loop")
-#            logging.info(an_event.title.text)
-#            logging.info(an_event2.title.text)
             result = compareEvents(an_event, an_event2, constVar)
             if result:
-                d = {'name': an_event2.title.text,
-                     'startTime': result[0],
-                     'endTime': result[1]}
-                output.append(d)
+                output.append(an_event)
     return output
                         
 
@@ -335,8 +326,6 @@ def compareEvents(event1, event2, var):
     if not stringMatching(event1.title.text, event2.title.text):
         return False
     else:
-        logging.info("MATCH MATCH MATCH")
-        logging.info(event1.title.text)
         for when in event1.when:
             for when2 in event2.when:
                 if compareTimes(when.start, when2.start, var) and compareTimes(when.end, when2.end, var):
@@ -381,7 +370,6 @@ class RegistrationHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
         if calendarClients.has_key(user.email()):
-            logging.info("has calendar key")
             calendar_client = calendarClients[user.email()]
             query = gdata.calendar.client.CalendarEventQuery()
             query.max_results = 100000
@@ -393,19 +381,13 @@ class RegistrationHandler(webapp.RequestHandler):
             for url in calurl:
                 urlSplitList = url.split("/")
                 cal_id = urlSplitList[5]
-                logging.info("cal_id here")
-                logging.info(cal_id)
                 dictAppend(user.email(), cal_id, ownerToCalendars)
                 dictAppend(cal_id, user.email(), calendarToOwners)
-                logging.info(cal_id)
                 returned_rule = shareDefaultCalendar(calendar_client, cal_id)
-            logging.info("dictionary")
-            logging.info(ownerToCalendars)
             self.redirect("/")
         else:
             if user.email() not in ownerToCalendars:
                 ownerToCalendars[user.email()] = []
-            logging.info("calender else")
             calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
             calendarClients[users.get_current_user().email()] = calendar_client
             # if we don't have an access token already, get a request token
