@@ -261,7 +261,37 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
             
     return output
 
-def findEvents(calClient, calId, text_query, start_date, end_date):
+def findEventsInContactList(calClient, contactsList, text_query, start_date, end_date):
+    """
+    calClient - calendarClient
+    contact - list of email addresses
+    text_query - any string (Ex: 6.046, zoo trip, piano)
+    start_date - date in RFC format (Ex: 2010-10-01T10:00:00-04:00)
+    end_date - date in RFC format
+    """
+    output = []
+    for contact in contactsList:
+        temp = _findEventsInContact(calClient, contact, text_query, start_date, end_date)
+        if temp != None:
+            output.extend(temp)
+    return output
+
+def _findEventsInContact(calClient, contact, text_query, start_date, end_date):
+    """
+    calClient - calendarClient
+    contact - contact email address
+    text_query - any string (Ex: 6.046, zoo trip, piano)
+    start_date - date in RFC format (Ex: 2010-10-01T10:00:00-04:00)
+    end_date - date in RFC format
+    """
+    output = []
+    if contact in ownerToCalendars:
+        for calId in ownerToCalendars[contact]:
+            output.extend(_findEvents(calClient, calId, text_query, start_date, end_date))
+        return output
+    else:
+        return None
+def _findEvents(calClient, calId, text_query, start_date, end_date):
     """
     calClient - calendarClient
     calId - URL id of calendar
@@ -285,6 +315,7 @@ def findEvents(calClient, calId, text_query, start_date, end_date):
                          'endTime': end,
                          'name': an_event.title.text}
                     output.append(d)
+        return output
     else:
         return _googleFindEvents(calClient, calId, text_query, start_date, end_date)
     
@@ -309,23 +340,6 @@ def _googleFindEvents(calClient, calId, text_query, start_date, end_date):
 def _getWhen(an_event):
     first = an_event.when[0]
     return first.start, first.end
-
-def findEventsUser(username, text_query):
-    calClient = calendarClients[username]
-    output = []
-    for calId in ownerToCalendars[username]:
-        output.extend(findEvents(calClient, calId, text_query))
-        
-    return output
-        
-def findEventsInContacts(calClient, contactsList, textQuery):
-    output = []
-    for contact in contactsList:
-        if contact in ownerToCalendars:
-            for calId in ownerToCalendars[contact]:
-                output.extend(findEvents(calClient, calId, textQuery))
-                
-    return output
 
 def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
     """ Requires emailList to have at least two emails
@@ -547,7 +561,8 @@ class MainHandler(webapp.RequestHandler):
                             if entry.name:
                                 for email in entry.email:
                                     if email.address.find('@gmail.com') != -1:
-                                        contacts.append({'name':entry.name.full_name.text, 'email':email.address})
+                                        if email.address in ownerToCalendars:
+                                            contacts.append({'name':entry.name.full_name.text, 'email':email.address})
         #                            if email.primary and email.primary == 'true':
         #                                result += '     ' + email.address
         #                        result += '<br />'
@@ -767,11 +782,16 @@ def textDateTimeToRfc(stringDate):
     return rfc3339(pythonDate)
 
 def textDateToDate(stringDate):
-    sList = stringDate.split('/')
-    iList = [int(entry) for entry in sList]
-    pythonDate = datetime.date(iList[2],
-                               iList[0],
-                               iList[1])
+    dateTimeList = stringDate.split(' ')
+    dateList = dateTimeList[0].split('/')
+    timeList = dateTimeList[1].split(':')
+    iDateList = [int(entry) for entry in dateList] #[8, 20, 2012]
+    iTimeList = [int(entry) for entry in timeList] #[6, 52]
+    pythonDate = datetime.datetime(iDateList[2], # year
+                               iDateList[0], # month
+                               iDateList[1], # day
+                               iTimeList[0] + 12 * (dateTimeList[2] == 'pm' and iTimeList[0] != 12), # hour
+                               iTimeList[1])
     return pythonDate
 
 class FindCommonEventsHandler(webapp.RequestHandler):
@@ -827,7 +847,7 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         user = users.get_current_user()
         
         email1 = user.email()
-        emailList = [friend[0:-len('@gmail.com')] for friend in friends]
+        emailList = friends
         emailList.append(email1)
         
         start_date = textDateToDate(startDate)
@@ -848,6 +868,38 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         
         logging.info('what are the times')
         logging.info(commonTimes)
+
+class FindEventsHandler(webapp.RequestHandler):
+    def get(self):
+        pass
+    def post(self):
+        logging.info("Start findEventsHandler")
+        jsonData = json.loads(self.request.get('jsonData'))
+        startTime = jsonData['startTime'] # in mm/dd/yyyy TT:TT format
+        endTime = jsonData['endTime'] # in mm/dd/yyyy TT:TT format
+        eventQuery = jsonData['eventQuery']
+        friends = jsonData['friends'] # in list format of @gmail.com addresses
+        
+        user = users.get_current_user()
+        
+        email1 = user.email()
+        emailList = friends
+        
+        start_time = textDateTimeToRfc(startTime)
+        end_time = textDateTimeToRfc(endTime)
+        
+        logging.info('emailList')
+        logging.info(emailList)
+        logging.info('endEmailList')
+        # look at FindCommonEventsHandler's post(self): for an example        
+        events = findEventsInContactList(overlordCalClient, emailList, eventQuery, start_time, end_time)
+        
+        logging.info('what is the user')
+        logging.info(user)
+        
+        logging.info('what are the events')
+        logging.info(events)
+        
         
 class PoopHandler(webapp.RequestHandler):
     def get(self):
@@ -868,6 +920,7 @@ application = webapp.WSGIApplication(
      ('/oauth2calendarcallback.*', OAuthCalendarHandler),
      ('/findCommonEvents', FindCommonEventsHandler),
      ('/findCommonTimes', FindCommonTimesHandler),
+     ('/findEvents', FindEventsHandler),
      ('/poop', PoopHandler),
      ('/debug', DebugHandler)],
     debug=True)
