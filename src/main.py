@@ -69,6 +69,8 @@ calendarClients = {} # dictionary for calendarClients
 ownerToCalendars = {} # string owner email address -- > list of calendar IDs
 calendarToOwners = {} # string calendar IDs --> list of owners
 sharedToCalendars = {} # string email address --> list of calendar IDs he is shared with
+timeZones = {} # string owner email address --> time zone (integer -12 to 12, representing how many hours ahead or behind he is)
+defaultTZ = -4
 
 overlordCalClient = gdata.calendar.client.CalendarClient(source = 'caretPlanner')
 overlordCalClient.ClientLogin('socialplanner21@gmail.com', 'social21w785', overlordCalClient.source);
@@ -102,24 +104,6 @@ def dictAdd(key, value, d):
         d[key] = d[key]+value
     else:
         d[key] = value
-
-def makeFreeBusy(eventFeed, startTime, endTime):
-    """
-    eventFeed is a google feed object, while
-    start Time and endTimes are python datetime
-    objects"""
-    
-    timesList = []
-    
-    for an_event in eventFeed.entry:
-        for when in an_event.when:
-            start = rfcTodateTime(when.start)
-            end = rfcTodateTime(when.end)
-            if (start.time() >= startTime and start.time() <= endTime) \
-                or (end.time() >= startTime and end.time() <= endTime):
-                timesList.append((start,end))
-                
-    return FreeBusy(timesList)
 
 def _RetrieveAclRule(username, calClient, cal_id):
     """Retrieves the entry associated with the Access Control Rule of the given username for
@@ -409,7 +393,7 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
 #            eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
     output = []
-    
+    logging.info([x.title.text for x in eventList1])
     for an_event in eventList1:
         for an_event2 in eventList2:
             result = compareEvents(an_event, an_event2, constVar)
@@ -466,6 +450,9 @@ class RegistrationHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
         if calendarClients.has_key(user.email()):
+            # Add time zone
+            timeZones[user.email()] = defaultTZ
+            
             calendar_client = calendarClients[user.email()]
             query = gdata.calendar.client.CalendarEventQuery()
             query.max_results = 100000
@@ -781,7 +768,7 @@ def textDateTimeToRfc(stringDate):
                                iTimeList[1])
     return rfc3339(pythonDate)
 
-def textDateToDate(stringDate):
+def textDateTimeToDateTime(stringDate):
     dateTimeList = stringDate.split(' ')
     dateList = dateTimeList[0].split('/')
     timeList = dateTimeList[1].split(':')
@@ -793,6 +780,11 @@ def textDateToDate(stringDate):
                                iTimeList[0] + 12 * (dateTimeList[2] == 'pm' and iTimeList[0] != 12), # hour
                                iTimeList[1])
     return pythonDate
+
+def tzToGMT(dateTime, timezone):
+    return dateTime + datetime.timedelta(hours = -timezone)
+def GMTTotz(dateTime, timezone):
+    return dateTime + datetime.timedelta(hours = timezone)
 
 class FindCommonEventsHandler(webapp.RequestHandler):
     def get(self):
@@ -810,9 +802,11 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         emailList = friends
         emailList.append(email1)
         
-        rfcStartTime = textDateTimeToRfc(startTime)
-        rfcEndTime = textDateTimeToRfc(endTime)
-        
+        start_time_date = textDateTimeToDateTime(startTime)
+        end_time_date = textDateTimeToDateTime(endTime)
+        rfcStartTime = rfc3339(tzToGMT(start_time_date, timeZones[email1]))
+        rfcEndTime = rfc3339(tzToGMT(end_time_date, timeZones[email1]))
+
         logging.info('emailList')
         logging.info(emailList)
         logging.info(rfcStartTime)
@@ -850,8 +844,8 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         emailList = friends
         emailList.append(email1)
         
-        start_date = textDateToDate(startDate)
-        end_date = textDateToDate(endDate)
+        start_date = textDateTimeToDateTime(startDate)
+        end_date = textDateTimeToDateTime(endDate)
         
         logging.info('emailList')
         logging.info(emailList)
@@ -862,7 +856,10 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         endTime = datetime.time(21, 0)
         
         commonTimes = findTimes(overlordCalClient, emailList, startTime, endTime, start_date, 60, 2)
-        
+        output = []
+        for st in commonTimes:
+            output.apend(GMTTotz(st, timeZones[email1]))
+            
         logging.info('what is the user')
         logging.info(user)
         
@@ -885,14 +882,16 @@ class FindEventsHandler(webapp.RequestHandler):
         email1 = user.email()
         emailList = friends
         
-        start_time = textDateTimeToRfc(startTime)
-        end_time = textDateTimeToRfc(endTime)
+        start_time_date = textDateTimeToDateTime(startTime)
+        end_time_date = textDateTimeToDateTime(endTime)
+        rfcStartTime = rfc3339(tzToGMT(start_time_date, timeZones[email1]))
+        rfcEndTime = rfc3339(tzToGMT(end_time_date, timeZones[email1]))
         
         logging.info('emailList')
         logging.info(emailList)
         logging.info('endEmailList')
         # look at FindCommonEventsHandler's post(self): for an example        
-        events = findEventsInContactList(overlordCalClient, emailList, eventQuery, start_time, end_time)
+        events = findEventsInContactList(overlordCalClient, emailList, eventQuery, rfcStartTime, rfcEndTime)
         
         logging.info('what is the user')
         logging.info(user)
