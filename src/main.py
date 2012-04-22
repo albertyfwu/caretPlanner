@@ -7,6 +7,8 @@ import re
 
 import FreeBusy
 
+from google.appengine.api import background_thread
+
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
@@ -329,12 +331,13 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
     """ Requires emailList to have at least two emails
     start_date and end_date are in RFC3339 format
     constVar is how many minutes they can be late/leave early"""
-    debug.info('hello')
-    
+        
     if len(emailList) < 2:
         return None
     else:
+        logging.info('before tempOutput')
         tempOutput = findCommonEventsTwoPeople(calClient, emailList[0], emailList[1], start_date, end_date, constVar = 5)
+        logging.info('after tempOutput')
         if len(emailList) == 2:
             debug.info('two people')
             output = []
@@ -376,24 +379,26 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
     eventList1 = []
     eventList2 = []
     if email1 in ownerToCalendars:
-        for calId in ownerToCalendars[email1]:
+        for calId in ownerToCalendars[email1][0:1]:
+            # try threading to remove bottleneck?
+#            def extendEventList1():
             eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
-        debug.info('eventList1')
-        debug.info(eventList1)
+#            Thread(target = extendEventList1).start()
+#            eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
                               
     if email2 in ownerToCalendars:
-        for calId in ownerToCalendars[email2]:
+        for calId in ownerToCalendars[email2][0:1]:
+            # try threading to remove bottleneck?
+#            def extendEventList2():
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
-        debug.info('eventList2')
-        debug.info(eventList2)
+#            Thread(target = extendEventList2).start()
+#            eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
     output = []
     
     for an_event in eventList1:
         for an_event2 in eventList2:
             result = compareEvents(an_event, an_event2, constVar)
-            debug.info('result')
-            debug.info(result)
             if result:
                 output.append(an_event)
     return output
@@ -747,14 +752,18 @@ class SignOutHandler(webapp.RequestHandler):
         if users.get_current_user().email() in calendarClients:
             del calendarClients[users.get_current_user().email()]
 
-# takes a string date like '08/20/2012' and converts it into RFC format
-def textDateToRfc(stringDate):
-    sList = stringDate.split('/')
-    iList = [int(entry) for entry in sList]
-    pythonDate = datetime.date(iList[2],
-                               iList[0],
-                               iList[1])
-    
+# takes a string datetime like '08/20/2012 06:52 pm' and converts it into RFC format
+def textDateTimeToRfc(stringDate):
+    dateTimeList = stringDate.split(' ')
+    dateList = dateTimeList[0].split('/')
+    timeList = dateTimeList[1].split(':')
+    iDateList = [int(entry) for entry in dateList] #[8, 20, 2012]
+    iTimeList = [int(entry) for entry in timeList] #[6, 52]
+    pythonDate = datetime.datetime(iDateList[2], # year
+                               iDateList[0], # month
+                               iDateList[1], # day
+                               iTimeList[0] + 12 * (dateTimeList[2] == 'pm' and iTimeList[0] != 12), # hour
+                               iTimeList[1])
     return rfc3339(pythonDate)
 
 def textDateToDate(stringDate):
@@ -781,8 +790,8 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         emailList = friends
         emailList.append(email1)
         
-        rfcStartTime = textDateToRfc(startTime)
-        rfcEndTime = textDateToRfc(endTime)
+        rfcStartTime = textDateTimeToRfc(startTime)
+        rfcEndTime = textDateTimeToRfc(endTime)
         
         logging.info('emailList')
         logging.info(emailList)
@@ -790,6 +799,7 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         logging.info(rfcEndTime)
         logging.info('endEmailList')
         
+        # the following line is the bottleneck
         commonEvents = findCommonEvents(overlordCalClient, emailList, rfcStartTime, rfcEndTime)
         
         logging.info('what is the user')

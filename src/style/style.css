@@ -4,6 +4,7 @@ body {
 	margin:0;
 	padding:0;
 	height:100%;
+	font-size: 10px;
 }
 
 /* css for timepicker */
@@ -73,6 +74,10 @@ body {
 	border-radius:8px;
 }
 
+#regWelcome {
+	font-size:16px;
+}
+
 #contactsTitleDiv {
 	padding:15px;
 	font-size:24px;
@@ -83,6 +88,7 @@ body {
 	overflow:auto;
 	height:500px;
 	width:250px;
+	font-size:14px;
 }
 
 #circleButtons {
