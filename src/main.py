@@ -40,7 +40,7 @@ class Debug:
     
 debug = Debug('poop')
 
-runningLocally = False
+runningLocally = True
 # if True, runningLocally changes the oauthcallback to reflect localhost instead
 # of caretPlanner
 # if False, runningLocally uses caretPlanner and associated key
@@ -60,8 +60,6 @@ else:
     CONSUMER_SECRET2 = 'weJQmMvxdKum8XGxMadzHNTz'
     calendarCallbackUrl = 'http://caretplanner.appspot.com/oauth2calendarcallback'
     clientCallbackUrl = 'http://caretplanner.appspot.com/oauth2callback'
-
-contacts = ['a', 'ab', 'abc', 'abcd', 'abcde']
 
 contactsClients = {} # dictionary for ContactsClients
 calendarClients = {} # dictionary for calendarClients
@@ -331,18 +329,26 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
     """ Requires emailList to have at least two emails
     start_date and end_date are in RFC3339 format
     constVar is how many minutes they can be late/leave early"""
+    debug.info('hello')
     
     if len(emailList) < 2:
         return None
     else:
         tempOutput = findCommonEventsTwoPeople(calClient, emailList[0], emailList[1], start_date, end_date, constVar = 5)
         if len(emailList) == 2:
+            debug.info('two people')
             output = []
             for event in tempOutput:
+                debug.info('start of one event')
+                debug.info(event.title.text)
+                debug.info(event.when[0].start)
+                debug.info(event.when[0].end)
+                debug.info('end of one event')
                 d = {'name': event.title.text,
                      'startTime': event.when[0].start,
                      'endTime': event.when[0].end}
                 output.append(d)
+            debug.info(output)
             return output
         else:
             for i in range(2, len(emailList)):
@@ -351,6 +357,7 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
                     for calId in ownerToCalendars[emailList[i]]:
                         eventList = _getEvents(calClient, calId, start_date, end_date)
                         for an_event in tempOutput:
+                            debug.info(an_event)
                             for an_event2 in eventList:
                                 result = compareEvents(an_event, an_event2, constVar)
                                 if result:
@@ -371,16 +378,22 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
     if email1 in ownerToCalendars:
         for calId in ownerToCalendars[email1]:
             eventList1.extend(_getEvents(calClient, calId, start_date, end_date))
+        debug.info('eventList1')
+        debug.info(eventList1)
                               
     if email2 in ownerToCalendars:
         for calId in ownerToCalendars[email2]:
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
+        debug.info('eventList2')
+        debug.info(eventList2)
     
     output = []
     
     for an_event in eventList1:
         for an_event2 in eventList2:
             result = compareEvents(an_event, an_event2, constVar)
+            debug.info('result')
+            debug.info(result)
             if result:
                 output.append(an_event)
     return output
@@ -563,15 +576,6 @@ class MainHandler(webapp.RequestHandler):
                     self.redirect(str(request_token.generate_authorization_url()))
         else:
             self.redirect(users.create_login_url(self.request.uri))
-            
-    def post(self):
-        query = self.request.get('query')
-        regex = '^' + query + '.*$'
-        matches = [name for name in contacts if re.match(regex, name)]
-
-        self.response.headers['Content-Type'] = 'application/json'
-        result = json.dumps({'matches': matches})
-        self.response.out.write(result)
         
 #class RegistrationHandler
 #    def get(self):
@@ -773,7 +777,8 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         user = users.get_current_user()
         
         email1 = user.email()
-        emailList = [friend[0:-len('@gmail.com')] for friend in friends]
+#        emailList = [friend[0:-len('@gmail.com')] for friend in friends]
+        emailList = friends
         emailList.append(email1)
         
         rfcStartTime = textDateToRfc(startTime)
