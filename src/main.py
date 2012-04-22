@@ -29,6 +29,17 @@ import logging
 import json
 import re
 
+class Debug:
+    def __init__(self, name):
+        self.name = name
+        self.logs = []
+    def info(self, object):
+        self.logs.append(object)
+    def getLogs(self):
+        return self.logs
+    
+debug = Debug('poop')
+
 runningLocally = False
 # if True, runningLocally changes the oauthcallback to reflect localhost instead
 # of caretPlanner
@@ -827,6 +838,10 @@ class PoopHandler(webapp.RequestHandler):
     def get(self):
         self.response.out.write(ownerToCalendars)
         
+class DebugHandler(webapp.RequestHandler):
+    def get(self):
+        self.response.out.write(debug.getLogs())
+        
 application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
@@ -838,7 +853,8 @@ application = webapp.WSGIApplication(
      ('/oauth2calendarcallback.*', OAuthCalendarHandler),
      ('/findCommonEvents', FindCommonEventsHandler),
      ('/findCommonTimes', FindCommonTimesHandler),
-     ('/poop', PoopHandler)],
+     ('/poop', PoopHandler),
+     ('/debug', DebugHandler)],
     debug=True)
 
 def main():
