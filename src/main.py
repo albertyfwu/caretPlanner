@@ -5,6 +5,8 @@ import datetime
 from rfc3339 import rfc3339
 import re
 
+import FreeBusy
+
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
@@ -94,6 +96,24 @@ def dictAdd(key, value, d):
     else:
         d[key] = value
 
+def makeFreeBusy(eventFeed, startTime, endTime):
+    """
+    eventFeed is a google feed object, while
+    start Time and endTimes are python datetime
+    objects"""
+    
+    timesList = []
+    
+    for an_event in eventFeed.entry:
+        for when in an_event.when:
+            start = rfcTodateTime(when.start)
+            end = rfcTodateTime(when.end)
+            if (start.time() >= startTime and start.time() <= endTime) \
+                or (end.time() >= startTime and end.time() <= endTime):
+                timesList.append((start,end))
+                
+    return FreeBusy(timesList)
+
 def _RetrieveAclRule(username, calClient, cal_id):
     """Retrieves the entry associated with the Access Control Rule of the given username for
     the primary calendar of the calClient"""
@@ -159,7 +179,7 @@ def _calendarAvailability(calClient, calId, start_date, end_date):
     
     query = gdata.calendar.client.CalendarEventQuery(start_min=start_date, start_max=end_date)
     feed = calClient.GetCalendarEventFeed(uri = Url, q=query)
-    length = feed.entry.length
+    length = len(feed.entry)
     return length == 0
 
 def contactAvailability(calClient, calList, start_date, end_date):
@@ -169,7 +189,7 @@ def contactAvailability(calClient, calList, start_date, end_date):
     return True
 
 
-def FindTimes (calClient, contactsList, start_time, end_time, start_date, duration, date_duration = 14):
+def findTimes (calClient, contactsList, start_time, end_time, start_date, duration, date_duration = 14):
     """
     start_time and end_time are of types datetime.time
     start_date is of types datetime.date
@@ -179,18 +199,51 @@ def FindTimes (calClient, contactsList, start_time, end_time, start_date, durati
     
     returns list of start times that get the most people
     """
+    
+    freeBusyList = [] # list of freebusy objects
+    
+    for contact in contactsList:
+        if contact in ownerToCalendars:
+            freeBusy = FreeBusy.FreeBusy([])
+            for calId in ownerToCalendars[contact]:
+                earliest = datetime.datetime(start_date.year, start_date.month, start_date.day, start_time.hour, start_time.minute)
+                lastDay = start_date + datetime.timedelta(date_duration)
+                latest = datetime.datetime(lastDay.year, lastDay.month, lastDay.day, end_time.hour, end_time.minute)
+                eventFeed = _getEvents(calClient, calId, rfc3339(earliest), rfc3339(latest))
+                freeBusy.addEventFeed(eventFeed, start_time, end_time)
+            if not freeBusy.isEmpty():
+                freeBusyList.append(freeBusy)
+                
+    logging.info("freeBusyList")
+    logging.info(len(freeBusyList))
+    sortedList = freeBusyList[0].timesList
+    sortedList.sort()
+    logging.info(sortedList)
+    sortedList2 = freeBusyList[1].timesList
+    sortedList2.sort()
+    logging.info(sortedList2)
+    
     bestTimes = {}
-    currentStart = datetime.datetime(start_date.year, start_date.month, start_date.day, start_time.hour, start_time.minute)
-    currentEnd = currentStart + datetime.timedelta(minutes = duration)
+    
     for i in range(date_duration):
-        while(currentEnd.time < end_time):
-            currentStartRfc = rfc3339(currentStart)
-            currentEndRfc = rfc3339(currentEnd)
-            for contact in contactsList:
-                if contact in ownerToCalendars:
-                    if contactAvailability(calClient, ownerToCalendars[contact], currentStartRfc, currentEndRfc):
-                        dictAdd(currentStart, 1, bestTimes)
-    max_value = max[bestTimes.values()]
+        currentStart = datetime.datetime(start_date.year, start_date.month, start_date.day, start_time.hour, start_time.minute)
+        currentStart += datetime.timedelta(i)
+        currentEnd = currentStart + datetime.timedelta(minutes = duration)
+        currentEnd += datetime.timedelta(i)
+        while(currentEnd.time() < end_time):
+            bestTimes[currentStart] = 0
+            for freeBusy in freeBusyList:
+                if freeBusy.availableAt(currentStart, currentEnd):
+                    bestTimes[currentStart] += 1
+            currentStart += datetime.timedelta(0, 900)
+            currentEnd += datetime.timedelta(0, 900)
+        
+    logging.info("bestTimes")
+    logging.info(bestTimes)
+    
+    
+    max_value = max(bestTimes.values())
+    logging.info(max_value)
     if max_value == 0:
         return None
     output = []
@@ -215,7 +268,7 @@ def findEvents(calClient, calId, text_query, start_date, end_date):
         output = []
         className = m.group(1)
         eventfeed = _getEvents(calClient, calId, start_date, end_date)
-        for an_event in eventfeed.entry:
+        for an_event in eventfeed:
             m2 = p.match(an_event.title.text)
             if m2:
                 if className == m2.group(1):
@@ -700,6 +753,14 @@ def textDateToRfc(stringDate):
     
     return rfc3339(pythonDate)
 
+def textDateToDate(stringDate):
+    sList = stringDate.split('/')
+    iList = [int(entry) for entry in sList]
+    pythonDate = datetime.date(iList[2],
+                               iList[0],
+                               iList[1])
+    return pythonDate
+
 class FindCommonEventsHandler(webapp.RequestHandler):
     def get(self):
         pass
@@ -748,9 +809,31 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         endDate = jsonData['endDate'] # in mm/dd/yyyy format
         friends = jsonData['friends'] # in list format of @gmail.com addresses
         
+        user = users.get_current_user()
+        
+        email1 = user.email()
+        emailList = [friend[0:-len('@gmail.com')] for friend in friends]
+        emailList.append(email1)
+        
+        start_date = textDateToDate(startDate)
+        end_date = textDateToDate(endDate)
+        
+        logging.info('emailList')
+        logging.info(emailList)
+        logging.info('endEmailList')
         # look at FindCommonEventsHandler's post(self): for an example
-        pass
-
+        duration = 60 ## magic number, change later
+        startTime = datetime.time(17, 0)
+        endTime = datetime.time(21, 0)
+        
+        commonTimes = findTimes(overlordCalClient, emailList, startTime, endTime, start_date, 60, 2)
+        
+        logging.info('what is the user')
+        logging.info(user)
+        
+        logging.info('what are the times')
+        logging.info(commonTimes)
+        
 application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
