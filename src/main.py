@@ -29,7 +29,7 @@ import logging
 import json
 import re
 
-runningLocally = True
+runningLocally = False
 # if True, runningLocally changes the oauthcallback to reflect localhost instead
 # of caretPlanner
 # if False, runningLocally uses caretPlanner and associated key
@@ -823,6 +823,10 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         logging.info('what are the times')
         logging.info(commonTimes)
         
+class PoopHandler(webapp.RequestHandler):
+    def get(self):
+        self.response.out.write(ownerToCalendars)
+        
 application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
@@ -833,7 +837,8 @@ application = webapp.WSGIApplication(
      ('/oauth2callback.*', OAuthHandler),
      ('/oauth2calendarcallback.*', OAuthCalendarHandler),
      ('/findCommonEvents', FindCommonEventsHandler),
-     ('/findCommonTimes', FindCommonTimesHandler)],
+     ('/findCommonTimes', FindCommonTimesHandler),
+     ('/poop', PoopHandler)],
     debug=True)
 
 def main():
