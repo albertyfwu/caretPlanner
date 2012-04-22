@@ -146,6 +146,7 @@ def _getEvents(calClient, calId, start_date, end_date):
     
     Url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
     query = gdata.calendar.client.CalendarEventQuery(start_min=start_date, start_max=end_date)
+    query.max_results = 100000
     feed = calClient.GetCalendarEventFeed(uri = Url, q=query)
     return feed.entry
     
@@ -314,11 +315,13 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
         for calId in ownerToCalendars[email2]:
             eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
-    logging.info('dinosaurs')
-    
     output = []
+    
     for an_event in eventList1:
         for an_event2 in eventList2:
+#            logging.info("for for loop")
+#            logging.info(an_event.title.text)
+#            logging.info(an_event2.title.text)
             result = compareEvents(an_event, an_event2, constVar)
             if result:
                 d = {'name': an_event2.title.text,
@@ -328,10 +331,12 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
     return output
                         
 
-def compareEvents(event1, event2, var): 
+def compareEvents(event1, event2, var):    
     if not stringMatching(event1.title.text, event2.title.text):
         return False
     else:
+        logging.info("MATCH MATCH MATCH")
+        logging.info(event1.title.text)
         for when in event1.when:
             for when2 in event2.when:
                 if compareTimes(when.start, when2.start, var) and compareTimes(when.end, when2.end, var):
@@ -340,6 +345,8 @@ def compareEvents(event1, event2, var):
     
 def stringMatching(str1, str2):
     p = re.compile('^\d+\w?.\d+\w?')
+    if str1 is None or str2 is None:
+        return False
     m1 = p.match(str1)
     m2 = p.match(str2)
     if m1 and m2:
@@ -359,7 +366,7 @@ def rfcTodateTime(rfc):
     if rfc[length-1] == 'z' or rfc[length-1] == 'Z':
         return datetime.datetime(year, month, day, hour, minute)
     else:
-        hour -= int(float(rfc[length-6:length-3]))
+        hour = (hour - int(float(rfc[length-6:length-3]))) % 24
         return datetime.datetime(year, month, day, hour, minute)
 
 
