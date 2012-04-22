@@ -42,20 +42,13 @@
 						End: <input type="text" value="" class="datePicker" id="eventsEndtime" />
 						<br />
 						<input type="submit" id="findEventsButton" value="Go" />
-						<div id="findEventsResultsDiv">
-							Results:
-							<table width="100%">
-								<tr>
-									<td>Event Name</td>
-									<td>Start Time</td>
-									<td>End Time</td>
-								</tr>
-								<tr>
-									<td>asdf</td>
-									<td>asdf</td>
-									<td>asdf</td>
-								</tr>
-							</table>
+						<div id="findEventsOutsideDiv">
+							<div id='findEventsLoader' style='display:none'>
+								<img src='img/loader.gif' />
+							</div>
+							<div id="findEventsResultsDiv">
+								<!-- initially empty -->
+							</div>
 						</div>
 					</div>
 					<div id="tabs-2">
@@ -210,19 +203,27 @@
 				});
 				var query = {startTime: startTime,
 							 endTime: endTime,
-							 friends: friends}
-				// post the jQuery to the backend for results
+							 friends: friends};
+				
+				// let user know that we are loading
+				$("#findEventsResultsDiv").html('');
+				$("#findEventsLoader").show();
 				
 				$.post('/findCommonEvents', {jsonData: JSON.stringify(query)}, function(data) {
-					var html = 'Results:<table>';
-					$(data).each(function() {
+					var html = "Results:<table border=1 width='100%'>";
+					html += '<tr><td>Name</td><td>Start</td><td>End</td></tr>';
+					
+					for(var i = 0; i < data.length; i++) {
+						var event = data[i];
 						html += '<tr>';
-						html += '<td>' + data.name + '</td>';
-						html += '<td>' + data.startTime + '</td>';
-						html += '<td>' + data.endTime + '</td>';
+						html += '<td>' + event.name + '</td>';
+						html += '<td>' + event.startTime + '</td>';
+						html += '<td>' + event.endTime + '</td>';
 						html += '</tr>';
-					});
-					html += '</table>'
+					}
+					
+					html += '</table>';
+					$("#findEventsLoader").hide();
 					$("#findEventsResultsDiv").html(html);
 				});
 			});
