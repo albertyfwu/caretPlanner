@@ -7,7 +7,7 @@ import re
 
 import FreeBusy
 
-from google.appengine.api import background_thread
+#from google.appengine.api import background_thread
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app

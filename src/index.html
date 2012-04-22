@@ -1,7 +1,5 @@
 <html>
 	<head>
-		
-		
 		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 		<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
@@ -13,7 +11,7 @@
 			$("#content").tabs();
 			$(".dateTimePicker").datetimepicker({
 				ampm: true
-			});			
+			});
 		});
 		</script>
 	</head>
@@ -31,8 +29,9 @@
 				<div id="content">
 					<ul>
 						<li><a href="#tabs-0">Calendar</a></li>
-						<li><a href="#tabs-1">Find Events</a></li>
+						<li><a href="#tabs-1">Find Events between Friends</a></li>
 						<li><a href="#tabs-2">Schedule an Event</a></li>
+						<li><a href="#tabs-3">Find friends at an event</a>
 					</ul>
 					<div id="tabs-0">
 						<iframe src="https://www.google.com/calendar/embed?wkst=1&amp;bgcolor=%23FFFFFF&amp;src={{ username }}%40gmail.com&amp;color=%23A32929&amp"
@@ -79,6 +78,23 @@
 									</tr>
 								</tbody>
 							</table>
+						</div>
+					</div>
+					<div id="tabs-3">
+						Give us a time range and an event query, and you'll be on your way.
+						<br />
+						Start: <input type="text"  value="" class="dateTimePicker" id="eventsSearchStartTime" />
+						End: <input type="text" value="" class="dateTimePicker" id="eventsSearchEndTime" />
+						<br />
+						<input type="text" id="findEventsSearchTextQuery" />
+						<input type="submit" id="findEventsSearchButton" value="Go" />
+						<div id="findEventsSearchOutsideDiv">
+							<div id='findEventsSearchLoader' style='display:none'>
+								<img src='img/loader.gif' />
+							</div>
+							<div id="findEventsSearchResultsDiv">
+								<!-- initially empty -->
+							</div>
 						</div>
 					</div>
 				</div>
@@ -258,6 +274,38 @@
 					});
 					html += '</table>'
 					$("#findTimesResultsDiv").html(html);
+				});
+			});
+			
+			$("#findEventsSearchButton").click(function() {
+				// make sure to do a check for valid start and end times
+				var startTime = $("#eventsSearchStartTime").val();
+				var endTime = $("#eventsSearchEndTime").val();
+				var eventQuery = $("#findEventsSearchTextQuery").val();
+				var query = {startTime: startTime,
+							 endTime: endTime,
+							 eventQuery: eventQuery};
+				
+				// let user know that we are loading
+// 				$("#findEventsResultsDiv").html('');
+// 				$("#findEventsLoader").show();
+				
+				$.post('/findCommonFriends', {jsonData: JSON.stringify(query)}, function(data) {
+					var html = "Results:<table border=1 width='100%'>";
+					html += '<thead><tr><td>Name</td><td>Start</td><td>End</td></tr></thead><tbody>';
+					
+					for(var i = 0; i < data.length; i++) {
+						var event = data[i];
+						html += '<tr>';
+						html += '<td>' + event.name + '</td>';
+						html += '<td>' + event.startTime + '</td>';
+						html += '<td>' + event.endTime + '</td>';
+						html += '</tr>';
+					}
+					
+					html += '</tbody></table>';
+// 					$("#findEventsLoader").hide();
+// 					$("#findEventsResultsDiv").html(html);
 				});
 			});
 		</script>
