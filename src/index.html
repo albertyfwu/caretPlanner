@@ -12,6 +12,7 @@
 			$(".dateTimePicker").datetimepicker({
 				ampm: true
 			});
+// 			alert('hello');
 		});
 		</script>
 	</head>
@@ -227,29 +228,32 @@
 				var query = {startTime: startTime,
 							 endTime: endTime,
 							 friends: friends};
-				
-				// let user know that we are loading
-				$("#findEventsResultsDiv").html('');
-				$("#findEventsLoader").show();
-				
-				$.post('/findCommonEvents', {jsonData: JSON.stringify(query)}, function(data) {
-					var html = "Results:<table border=1 width='100%'>";
-					html += '<thead><tr><td>Name</td><td>Start</td><td>End</td></tr></thead><tbody>';
+				if (friends.length == 0) {
+					alert("Please select at least one friend.")
+				}
+				else {
+					// let user know that we are loading
+					$("#findEventsResultsDiv").html('');
+					$("#findEventsLoader").show();
 					
-					for(var i = 0; i < data.length; i++) {
-						var event = data[i];
-						html += '<tr>';
-						html += '<td>' + event.name + '</td>';
-						html += '<td>' + event.startTime + '</td>';
-						html += '<td>' + event.endTime + '</td>';
-						html += '</tr>';
-					}
-					
-					html += '</tbody></table>';
-					$("#findEventsLoader").hide();
-					$("#findEventsResultsDiv").html(html);
-				});
-			});
+					$.post('/findCommonEvents', {jsonData: JSON.stringify(query)}, function(data) {
+						var html = "Results:<table border=1 width='100%'>";
+						html += '<thead><tr><td>Name</td><td>Start</td><td>End</td></tr></thead><tbody>';
+						for(var i = 0; i < data.length; i++) {
+							var event = data[i];
+							html += '<tr>';
+							html += '<td>' + event.name + '</td>';
+							html += '<td>' + event.startTime + '</td>';
+							html += '<td>' + event.endTime + '</td>';
+							html += '</tr>';
+						}
+						
+						html += '</tbody></table>';
+						$("#findEventsLoader").hide();
+						$("#findEventsResultsDiv").html(html);
+					});
+				}
+			});	
 			
 			$("#findTimesButton").click(function() {
 				var startDate = $("#timesStartDate").val();
@@ -282,28 +286,34 @@
 				var startTime = $("#eventsSearchStartTime").val();
 				var endTime = $("#eventsSearchEndTime").val();
 				var eventQuery = $("#findEventsSearchTextQuery").val();
+				var friends = [];
+				$(".contact:checked").each(function() {
+					friends.push($(this).val());
+				});
 				var query = {startTime: startTime,
 							 endTime: endTime,
-							 eventQuery: eventQuery};
+							 eventQuery: eventQuery,
+							 friends: friends};
 				
 				// let user know that we are loading
-// 				$("#findEventsResultsDiv").html('');
-// 				$("#findEventsLoader").show();
-				
-				$.post('/findCommonFriends', {jsonData: JSON.stringify(query)}, function(data) {
-					var html = "Results:<table border=1 width='100%'>";
-					html += '<thead><tr><td>Name</td><td>Start</td><td>End</td></tr></thead><tbody>';
+				$("#findEventsResultsDiv").html('');
+				$("#findEventsLoader").show();
+				alert("before post");
+				$.post('/findEvents', {jsonData: JSON.stringify(query)}, function(data) {
+					alert("post successful");
+// 					var html = "Results:<table border=1 width='100%'>";
+// 					html += '<thead><tr><td>Name</td><td>Start</td><td>End</td></tr></thead><tbody>';
 					
-					for(var i = 0; i < data.length; i++) {
-						var event = data[i];
-						html += '<tr>';
-						html += '<td>' + event.name + '</td>';
-						html += '<td>' + event.startTime + '</td>';
-						html += '<td>' + event.endTime + '</td>';
-						html += '</tr>';
-					}
+// 					for(var i = 0; i < data.length; i++) {
+// 						var event = data[i];
+// 						html += '<tr>';
+// 						html += '<td>' + event.name + '</td>';
+// 						html += '<td>' + event.startTime + '</td>';
+// 						html += '<td>' + event.endTime + '</td>';
+// 						html += '</tr>';
+// 					}
 					
-					html += '</tbody></table>';
+// 					html += '</tbody></table>';
 // 					$("#findEventsLoader").hide();
 // 					$("#findEventsResultsDiv").html(html);
 				});
