@@ -269,11 +269,11 @@ def _findEventsInContact(calClient, contact, text_query, start_date, end_date):
     output = []
     if contact in ownerToCalendars:
         for calId in ownerToCalendars[contact]:
-            output.extend(_findEvents(calClient, calId, text_query, start_date, end_date))
+            output.extend(_findEvents(calClient, calId, text_query, start_date, end_date, contact))
         return output
     else:
         return None
-def _findEvents(calClient, calId, text_query, start_date, end_date):
+def _findEvents(calClient, calId, text_query, start_date, end_date, owner):
     """
     calClient - calendarClient
     calId - URL id of calendar
@@ -295,7 +295,8 @@ def _findEvents(calClient, calId, text_query, start_date, end_date):
                     start,end = _getWhen(an_event)
                     d = {'startTime': start,
                          'endTime': end,
-                         'name': an_event.title.text}
+                         'name': an_event.title.text,
+                         'owner': owner}
                     output.append(d)
         return output
     else:
