@@ -214,16 +214,18 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
                 latest = datetime.datetime(lastDay.year, lastDay.month, lastDay.day, end_time.hour, end_time.minute)
                 eventFeed = _getEvents(calClient, calId, rfc3339(earliest), rfc3339(latest))
                 freeBusy.addEventFeed(eventFeed, start_time, end_time)
-            if not freeBusy.isEmpty():
-                freeBusyList.append(freeBusy)
-    
+            freeBusyList.append(freeBusy)
+    logging.info("freebusies")
+    logging.info(len(freeBusyList))
+    logging.info(freeBusyList[0].timesList.sort())
+    logging.info(freeBusyList[1].timesList.sort())
     bestTimes = {}
+    
     
     for i in range(date_duration):
         currentStart = datetime.datetime(start_date.year, start_date.month, start_date.day, start_time.hour, start_time.minute)
         currentStart += datetime.timedelta(i)
         currentEnd = currentStart + datetime.timedelta(minutes = duration)
-        currentEnd += datetime.timedelta(i)
         while(currentEnd.time() < end_time):
             bestTimes[currentStart] = 0
             for freeBusy in freeBusyList:
@@ -231,7 +233,8 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
                     bestTimes[currentStart] += 1
             currentStart += datetime.timedelta(0, 900)
             currentEnd += datetime.timedelta(0, 900)
-    
+    logging.info("besttimes")
+    logging.info(bestTimes)
     max_value = max(bestTimes.values())
     logging.info(max_value)
     if max_value == 0:
@@ -919,6 +922,8 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         
         user = users.get_current_user()
         
+        dummy_date = datetime.date(1,1,1)
+        
         email1 = user.email()
         emailList = friends
         emailList.append(email1)
@@ -926,15 +931,25 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         startTimeList = startTime.split(' ')
         startTimeHMList = startTimeList[0].split(':')
         startTimePy = datetime.time(int(startTimeHMList[0]) \
-                                    + 12 * (startTimeList[1] == 'pm' and startTimeHMList[0] != 12),
+                                    + 12 * (startTimeList[1] == 'pm' and int(startTimeHMList[0]) != 12),
                                     int(startTimeHMList[1]))
+        startDatePy = datetime.datetime.combine(dummy_date, startTimePy)
+        startDatePy = tzToGMT(startDatePy, timeZones[email1])
+        startTimePy = startDatePy.time()
         
         endTimeList = endTime.split(' ')
         endTimeHMList = endTimeList[0].split(':')
+        logging.info("endTime")
+        logging.info(int(endTimeHMList[0]) \
+                                  + 12 * (endTimeList[1] == 'pm' and int(endTimeHMList[0]) != 12))
+        logging.info(int(endTimeHMList[0]))
+        logging.info(endTimeList[1])
         endTimePy = datetime.time(int(endTimeHMList[0]) \
-                                  + 12 * (endTimeList[1] == 'pm' and endTimeHMList[0] != 12),
+                                  + 12 * (endTimeList[1] == 'pm' and int(endTimeHMList[0]) != 12),
                                   int(endTimeHMList[1]))
-        
+        endDatePy = datetime.datetime.combine(dummy_date, endTimePy)
+        endDatePy = tzToGMT(endDatePy, timeZones[email1])
+        endTimePy = endDatePy.time()
         startDatePy = textDateToDateTime(startDate)
         
         dateDurationInt = int(dateDuration)
