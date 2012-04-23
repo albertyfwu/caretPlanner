@@ -12,6 +12,9 @@
 			$(".dateTimePicker").datetimepicker({
 				ampm: true
 			});
+			$(".timePicker").timepicker({ampm: true});
+			$(".timeDurationPicker").timepicker({});
+			$(".datePicker").datepicker();
 		});
 		</script>
 	</head>
@@ -41,45 +44,36 @@
 						First, select the friends on the left you'd like to find common events with. Then, let us know the time range you'd like to look in.
 						<br />
 						Start: <input type="text"  value="" class="dateTimePicker" id="eventsStartTime" />
-						End: <input type="text" value="" class="dateTimePicker" id="eventsEndtime" />
+						End: <input type="text" value="" class="dateTimePicker" id="eventsEndTime" />
 						<br />
 						<input type="submit" id="findEventsButton" value="Go" />
 						<div id="findEventsOutsideDiv">
 							<div id='findEventsLoader' style='display:none'>
 								<img src='img/loader.gif' />
 							</div>
-							<div id="findEventsResultsDiv">
-								<table id="findEventsResultsTable">
-<!-- 									nothing for now -->
-								</table>
+							<div id="findEventsResultsDiv" class="resultsDiv">
+							<!--  nothing for now -->
 							</div>
 						</div>
 					</div>
 					<div id="tabs-2">
 						First, select the friends on the left you'd like to find good times with. Then, let us know the time range you'd like to look in (currently defaulted to between 1pm and 5pm).
 						<br />
-						Start: <input type="text"  value="" class="dateTimePicker" id="timesStartDate" />
-						End: <input type="text" value="" class="dateTimePicker" id="timesEndDate" />
+						Start hour: <input type="text"  value="" class="timePicker" id="timesStartTime" />
+						End hour: <input type="text" value="" class="timePicker" id="timesEndTime" />
+						Start date: <input type="text" value="" class="datePicker" id="timesStartDate" />						
+						<br />
+						Within the next <input type="text" value="14" id="timesDateDuration" /> days; 
+						Duration of event (hours:minutes): <input type="text" class="timeDurationPicker" id="timesDuration" />
 						<br />
 						<input type="submit" id="findTimesButton" value="Go" />
-						<div id="findTimesResultsDiv">
-							Results:
-							<table width="100%">
-								<thead>
-									<tr>
-										<td>Event Name</td>
-										<td>Start Time</td>
-										<td>End Time</td>
-									</tr>
-								</thead>
-								<tbody>
-									<tr>
-										<td>asdf</td>
-										<td>asdf</td>
-										<td>asdf</td>
-									</tr>
-								</tbody>
-							</table>
+						<div id="findTimesOutsideDiv">
+							<div id='findTimesLoader' style='display:none'>
+								<img src='img/loader.gif' />
+							</div>
+							<div id="findTimesResultsDiv" class="resultsDiv">
+							<!--  nothing for now -->
+							</div>
 						</div>
 					</div>
 					<div id="tabs-3">
@@ -94,7 +88,7 @@
 							<div id='findEventsSearchLoader' style='display:none'>
 								<img src='img/loader.gif' />
 							</div>
-							<div id="findEventsSearchResultsDiv">
+							<div id="findEventsSearchResultsDiv" class="resultsDiv">
 								<!-- initially empty -->
 							</div>
 						</div>
@@ -221,7 +215,7 @@
 			$("#findEventsButton").click(function() {
 				// make sure to do a check for valid start and end times
 				var startTime = $("#eventsStartTime").val();
-				var endTime = $("#eventsEndtime").val();
+				var endTime = $("#eventsEndTime").val();
 				var friends = [];
 				$(".contact:checked").each(function() {
 					friends.push($(this).val());
@@ -238,7 +232,7 @@
 					$("#findEventsLoader").show();
 					
 					$.post('/findCommonEvents', {jsonData: JSON.stringify(query)}, function(data) {
-						var html = "Results:<table id='findEventsResultsTable' width='100%'>";
+						var html = "Results:<table id='findEventsResultsTable' class='resultsTable' width='100%'>";
 						html += '<thead><tr><th>Name</th><th>Start</th><th>End</th></tr></thead><tbody>';
 						for(var i = 0; i < data.length; i++) {
 							var event = data[i];
@@ -257,27 +251,37 @@
 			});	
 			
 			$("#findTimesButton").click(function() {
+				var startTime = $("#timesStartTime").val();
+				var endTime = $("#timesEndTime").val();
 				var startDate = $("#timesStartDate").val();
-				var endDate = $("#timesEndDate").val();
+				var dateDuration = $("#timesDateDuration").val();
+				var timesDuration = $("#timesDuration").val();
 				var friends = [];
 				$(".contact:checked").each(function() {
 					friends.push($(this).val());
 				});
-				var query = {startDate: startDate,
-							 endDate: endDate,
+				var query = {startTime: startTime,
+							 endTime: endTime,
+							 startDate: startDate,
+							 dateDuration: dateDuration,
+							 timesDuration: timesDuration,
 							 friends: friends}
 				// post the jQuery to the backend for results
 				
+				$("#findTimesResultsDiv").html('');
+				$("#findTimesLoader").show();
+				
 				$.post('/findCommonTimes', {jsonData: JSON.stringify(query)}, function(data) {
-					var html = 'Results:<table>';
-					$(data).each(function() {
+					var html = "Results:<table id='findTimesResultsTable' class='resultsTable' width='100%'>";
+					html += '<thead><tr><th>Start time:</th></tr></thead><tbody>'
+					for(var i = 0; i < data.length; i++) {
+						var startTime = data[i];
 						html += '<tr>';
-						html += '<td>' + data.name + '</td>';
-						html += '<td>' + data.startTime + '</td>';
-						html += '<td>' + data.endTime + '</td>';
+						html += '<td>' + startTime + '</td>';
 						html += '</tr>';
-					});
-					html += '</table>'
+					}
+					html += '</tbody></table>';
+					$("#findTimesLoader").hide();
 					$("#findTimesResultsDiv").html(html);
 				});
 			});
@@ -297,26 +301,24 @@
 							 friends: friends};
 				
 				// let user know that we are loading
-				$("#findEventsResultsDiv").html('');
-				$("#findEventsLoader").show();
-				alert("before post");
+				$("#findEventsSearchResultsDiv").html('');
+				$("#findEventsSearchLoader").show();
+				
 				$.post('/findEvents', {jsonData: JSON.stringify(query)}, function(data) {
-					alert("post successful");
-// 					var html = "Results:<table border=1 width='100%'>";
-// 					html += '<thead><tr><td>Name</td><td>Start</td><td>End</td></tr></thead><tbody>';
+					var html = "Results:<table id='findEventsSearchResultsTable' class='resultsTable' width='100%'>";
+					html += '<thead><tr><th>Name</th><th>Start</th><th>End</th></tr></thead><tbody>';
+					for(var i = 0; i < data.length; i++) {
+						var event = data[i];
+						html += '<tr>';
+						html += '<td>' + event.name + '</td>';
+						html += '<td>' + event.startTime + '</td>';
+						html += '<td>' + event.endTime + '</td>';
+						html += '</tr>';
+					}
 					
-// 					for(var i = 0; i < data.length; i++) {
-// 						var event = data[i];
-// 						html += '<tr>';
-// 						html += '<td>' + event.name + '</td>';
-// 						html += '<td>' + event.startTime + '</td>';
-// 						html += '<td>' + event.endTime + '</td>';
-// 						html += '</tr>';
-// 					}
-					
-// 					html += '</tbody></table>';
-// 					$("#findEventsLoader").hide();
-// 					$("#findEventsResultsDiv").html(html);
+					html += '</tbody></table>';
+					$("#findEventsSearchLoader").hide();
+					$("#findEventsSearchResultsDiv").html(html);
 				});
 			});
 		</script>

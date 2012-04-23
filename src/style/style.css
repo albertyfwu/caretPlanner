@@ -82,25 +82,25 @@ body {
 	font-size:16px;
 }
 
-#findEventsResultsDiv {
+.resultsDiv {
 	font-size:12px;
 }
 
-#findEventsResultsTable {
+.resultsTable {
 	font-size:12px;
 }
 
-#findEventsResultsTable thead {
+.resultsTable thead {
 	width:100%;
 }
 
-#findEventsResultsTable td {
+.resultsTable td {
 	padding: 0px;
 	vertical-align: top;
 	border-bottom: 2px dotted #f0f0f0;
 }
 
-#findEventsResultsTable thead th {
+.resultsTable thead th {
 	padding-right:0px;
 	text-align:left;
 	border-bottom: 1px dotted #000000;

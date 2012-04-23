@@ -1,6 +1,8 @@
 import datetime
 from rfc3339 import rfc3339
 
+import logging
+
 class FreeBusy:
     def __init__(self, timesList = []):
         # timesList is a list of (start, end) tuples, where
@@ -23,6 +25,11 @@ class FreeBusy:
     def addEventFeed(self, eventFeed, startLimit, endLimit):
         for event in eventFeed:
             for when in event.when:
+                logging.info('when.start')
+                logging.info(when.start)
+                logging.info(when.end)
+                logging.info('name of when.start event')
+                logging.info(event.title.text)
                 start = rfcTodateTime(when.start)
                 end = rfcTodateTime(when.end)
                 if (start.time() >= startLimit and start.time() <= endLimit) \
@@ -35,15 +42,20 @@ def rfcTodateTime(rfc):
     year = int(rfc[0:4])
     month = int(rfc[5:7])
     day = int(rfc[8:10])
-    hour = int(rfc[11:13])
-    minute = int(rfc[14:16])
+    if len(rfc) > 10:
+        hour = int(rfc[11:13])
+        minute = int(rfc[14:16])
+    else:
+        hour = 0
+        minute = 0
     # ignore seconds
     
     length = len(rfc)
     if rfc[length-1] == 'z' or rfc[length-1] == 'Z':
         return datetime.datetime(year, month, day, hour, minute)
     else:
-        hour -= int(float(rfc[length-6:length-3]))
+#        hour -= int(float(rfc[length-6:length-3]))
+        hour = (hour - int(float(rfc[length-6:length-3]))) % 24
         return datetime.datetime(year, month, day, hour, minute)
 
     

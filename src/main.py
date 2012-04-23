@@ -7,8 +7,6 @@ import re
 
 import FreeBusy
 
-#from google.appengine.api import background_thread
-
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
@@ -179,7 +177,6 @@ def contactAvailability(calClient, calList, start_date, end_date):
         if _calendarAvailability(calClient, calId, start_date, end_date) == False:
             return False
     return True
-
 
 def findTimes (calClient, contactsList, start_time, end_time, start_date, duration, date_duration = 14):
     """
@@ -768,18 +765,36 @@ def textDateTimeToRfc(stringDate):
                                iTimeList[1])
     return rfc3339(pythonDate)
 
+def textDateToDate(stringDate):
+    dateList = stringDate.split('/')
+    iDateList = [int(entry) for entry in dateList]
+    pythonDate = datetime.date(iDateList[2],
+                               iDateList[0],
+                               iDateList[1])
+    return pythonDate
+
+def textDateToDateTime(stringDate):
+    dateList = stringDate.split('/')
+    iDateList = [int(entry) for entry in dateList]
+    pythonDateTime = datetime.datetime(iDateList[2],
+                               iDateList[0],
+                               iDateList[1],
+                               0,
+                               0)
+    return pythonDateTime
+
 def textDateTimeToDateTime(stringDate):
     dateTimeList = stringDate.split(' ')
     dateList = dateTimeList[0].split('/')
     timeList = dateTimeList[1].split(':')
     iDateList = [int(entry) for entry in dateList] #[8, 20, 2012]
     iTimeList = [int(entry) for entry in timeList] #[6, 52]
-    pythonDate = datetime.datetime(iDateList[2], # year
+    pythonDateTime = datetime.datetime(iDateList[2], # year
                                iDateList[0], # month
                                iDateList[1], # day
                                iTimeList[0] + 12 * (dateTimeList[2] == 'pm' and iTimeList[0] != 12), # hour
                                iTimeList[1])
-    return pythonDate
+    return pythonDateTime
 
 def tzToGMT(dateTime, timezone):
     return dateTime + datetime.timedelta(hours = -timezone)
@@ -834,8 +849,11 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         pass
     def post(self):
         jsonData = json.loads(self.request.get('jsonData'))
-        startDate = jsonData['startDate'] # in mm/dd/yyyy format
-        endDate = jsonData['endDate'] # in mm/dd/yyyy format
+        startTime = jsonData['startTime']
+        endTime = jsonData['endTime'] # in mm/dd/yyyy format
+        startDate = jsonData['startDate']
+        dateDuration = jsonData['dateDuration']
+        timesDuration = jsonData['timesDuration']
         friends = jsonData['friends'] # in list format of @gmail.com addresses
         
         user = users.get_current_user()
@@ -844,27 +862,59 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         emailList = friends
         emailList.append(email1)
         
-        start_date = textDateTimeToDateTime(startDate)
-        end_date = textDateTimeToDateTime(endDate)
+        startTimeList = startTime.split(' ')
+        startTimeHMList = startTimeList[0].split(':')
+        startTimePy = datetime.time(int(startTimeHMList[0]) \
+                                    + 12 * (startTimeList[1] == 'pm' and startTimeHMList[0] != 12),
+                                    int(startTimeHMList[1]))
+        
+        endTimeList = endTime.split(' ')
+        endTimeHMList = endTimeList[0].split(':')
+        endTimePy = datetime.time(int(endTimeHMList[0]) \
+                                  + 12 * (endTimeList[1] == 'pm' and endTimeHMList[0] != 12),
+                                  int(endTimeHMList[1]))
+        
+        startDatePy = textDateToDateTime(startDate)
+        
+        dateDurationInt = int(dateDuration)
+        
+        timesDurationList = timesDuration.split(':')
+        timesDurationInt = int(timesDurationList[0]) * 60 + int(timesDurationList[1])
         
         logging.info('emailList')
         logging.info(emailList)
         logging.info('endEmailList')
         # look at FindCommonEventsHandler's post(self): for an example
-        duration = 60 ## magic number, change later
-        startTime = datetime.time(17, 0)
-        endTime = datetime.time(21, 0)
         
-        commonTimes = findTimes(overlordCalClient, emailList, startTime, endTime, start_date, 60, 2)
+        logging.info('startTimePy')
+        logging.info(startTimePy)
+        logging.info('endTimePy')
+        logging.info(endTimePy)
+        logging.info('startDatePy')
+        logging.info(startDatePy)
+        logging.info('timesDurationInt')
+        logging.info(timesDurationInt)
+        logging.info('dateDurationInt')
+        logging.info(dateDurationInt)
+        commonTimes = findTimes(overlordCalClient, emailList, startTimePy, endTimePy,
+                                startDatePy, timesDurationInt, dateDurationInt)
         output = []
         for st in commonTimes:
-            output.apend(GMTTotz(st, timeZones[email1]))
+            output.append(GMTTotz(st, timeZones[email1]))
             
         logging.info('what is the user')
         logging.info(user)
         
         logging.info('what are the times')
         logging.info(commonTimes)
+        
+        rfcCommonTimes = [rfc3339(commonTime) for commonTime in commonTimes]
+        logging.info(rfcCommonTimes)
+        
+        self.response.headers['Content-Type'] = 'application/json'
+        result = json.dumps(rfcCommonTimes)
+        self.response.out.write(result)
+        
 
 class FindEventsHandler(webapp.RequestHandler):
     def get(self):
@@ -898,6 +948,10 @@ class FindEventsHandler(webapp.RequestHandler):
         
         logging.info('what are the events')
         logging.info(events)
+        
+        self.response.headers['Content-Type'] = 'application/json'
+        result = json.dumps(events)
+        self.response.out.write(result)
         
         
 class PoopHandler(webapp.RequestHandler):
