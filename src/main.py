@@ -244,7 +244,8 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
     output = []
     for key in bestTimes.keys():
         if (bestTimes[key] == max_value):
-            output.append(key)
+            key2 = GMTTotz(key, timeZones[users.get_current_user().email()])
+            output.append(key2)
     output.sort()
     return output
 
@@ -848,7 +849,7 @@ def rfcToDateTimeText(rfc):
         logging.info('z')
     else:
         hour = (hour - int(float(rfc[length-6:length-3]))) % 24
-    if hour > 12:
+    if hour >= 12:
         hourText = str(hour - 12).zfill(2)
         hourSuffix = 'pm'
     else:
