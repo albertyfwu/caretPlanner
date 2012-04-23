@@ -269,11 +269,11 @@ def _findEventsInContact(calClient, contact, text_query, start_date, end_date):
     output = []
     if contact in ownerToCalendars:
         for calId in ownerToCalendars[contact]:
-            output.extend(_findEvents(calClient, calId, text_query, start_date, end_date))
+            output.extend(_findEvents(calClient, calId, text_query, start_date, end_date, contact))
         return output
     else:
         return None
-def _findEvents(calClient, calId, text_query, start_date, end_date):
+def _findEvents(calClient, calId, text_query, start_date, end_date, owner):
     """
     calClient - calendarClient
     calId - URL id of calendar
@@ -295,7 +295,8 @@ def _findEvents(calClient, calId, text_query, start_date, end_date):
                     start,end = _getWhen(an_event)
                     d = {'startTime': start,
                          'endTime': end,
-                         'name': an_event.title.text}
+                         'name': an_event.title.text,
+                         'owner': owner}
                     output.append(d)
         return output
     else:
@@ -948,18 +949,17 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         commonTimes = findTimes(overlordCalClient, emailList, startTimePy, endTimePy,
                                 startDatePy, timesDurationInt, dateDurationInt)
         output = []
-        for st in commonTimes:
-            output.append(GMTTotz(st, timeZones[email1]))
-                    
         rfcCommonTimes = []
-        for commonTime in commonTimes:
-            # commonTime is a python datetime object
-            startTime = rfcToDateTimeText(rfc3339(commonTime))
-            endTime = rfcToDateTimeText(rfc3339(commonTime + datetime.timedelta(minutes=timesDurationInt)))
-            d = {'startTime': startTime,
-                 'endTime': endTime}
-            rfcCommonTimes.append(d)
-        logging.info(rfcCommonTimes)
+        if commonTimes != None:                        
+            rfcCommonTimes = []
+            for commonTime in commonTimes:
+                # commonTime is a python datetime object
+                startTime = rfcToDateTimeText(rfc3339(commonTime))
+                endTime = rfcToDateTimeText(rfc3339(commonTime + datetime.timedelta(minutes=timesDurationInt)))
+                d = {'startTime': startTime,
+                     'endTime': endTime}
+                rfcCommonTimes.append(d)
+            logging.info(rfcCommonTimes)
         
         self.response.headers['Content-Type'] = 'application/json'
         result = json.dumps(rfcCommonTimes)
