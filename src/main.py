@@ -222,8 +222,11 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
     for i in range(date_duration):
         currentStart = datetime.datetime(start_date.year, start_date.month, start_date.day, start_time.hour, start_time.minute)
         currentStart += datetime.timedelta(i)
+        logging.info('currentStart')
+        logging.info(currentStart)
         currentEnd = currentStart + datetime.timedelta(minutes = duration)
-        currentEnd += datetime.timedelta(i)
+        logging.info('currentEnd')
+        logging.info(currentEnd)
         while(currentEnd.time() < end_time):
             bestTimes[currentStart] = 0
             for freeBusy in freeBusyList:
