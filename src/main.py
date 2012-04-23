@@ -215,10 +215,6 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
                 eventFeed = _getEvents(calClient, calId, rfc3339(earliest), rfc3339(latest))
                 freeBusy.addEventFeed(eventFeed, start_time, end_time)
             freeBusyList.append(freeBusy)
-    logging.info("freebusies")
-    logging.info(len(freeBusyList))
-    logging.info(freeBusyList[0].timesList.sort())
-    logging.info(freeBusyList[1].timesList.sort())
     bestTimes = {}
     
     
@@ -227,8 +223,6 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
             
         currentStart = datetime.datetime(start_date.year, start_date.month, start_date.day, start_time.hour, start_time.minute)
         currentStart += datetime.timedelta(i)
-        logging.info('currentStart')
-        logging.info(currentStart)
         currentEnd = currentStart + datetime.timedelta(minutes = duration)
         if (end_time < start_time):
             temp = currentStart + datetime.timedelta(1) ## add one day
@@ -242,10 +236,7 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
                     bestTimes[currentStart] += 1
             currentStart += datetime.timedelta(0, 900)
             currentEnd += datetime.timedelta(0, 900)
-    logging.info("besttimes")
-    logging.info(bestTimes)
     max_value = max(bestTimes.values())
-    logging.info(max_value)
     if max_value == 0:
         return None
     output = []
@@ -345,23 +336,14 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
     if len(emailList) < 2:
         return None
     else:
-        logging.info('before tempOutput')
         tempOutput = findCommonEventsTwoPeople(calClient, emailList[0], emailList[1], start_date, end_date, constVar = 5)
-        logging.info('after tempOutput')
         if len(emailList) == 2:
-            debug.info('two people')
             output = []
             for event in tempOutput:
-                debug.info('start of one event')
-                debug.info(event.title.text)
-                debug.info(event.when[0].start)
-                debug.info(event.when[0].end)
-                debug.info('end of one event')
                 d = {'name': event.title.text,
                      'startTime': event.when[0].start,
                      'endTime': event.when[0].end}
                 output.append(d)
-            debug.info(output)
             return output
         else:
             for i in range(2, len(emailList)):
@@ -370,7 +352,6 @@ def findCommonEvents(calClient, emailList, start_date, end_date, constVar = 5):
                     for calId in ownerToCalendars[emailList[i]]:
                         eventList = _getEvents(calClient, calId, start_date, end_date)
                         for an_event in tempOutput:
-                            debug.info(an_event)
                             for an_event2 in eventList:
                                 result = compareEvents(an_event, an_event2, constVar)
                                 if result:
@@ -405,7 +386,6 @@ def findCommonEventsTwoPeople(calClient, email1, email2, start_date, end_date, c
 #            eventList2.extend(_getEvents(calClient, calId, start_date, end_date))
     
     output = []
-    logging.info([x.title.text for x in eventList1])
     for an_event in eventList1:
         for an_event2 in eventList2:
             result = compareEvents(an_event, an_event2, constVar)
@@ -447,9 +427,10 @@ def rfcTodateTime(rfc):
     if rfc[length-1] == 'z' or rfc[length-1] == 'Z':
         return datetime.datetime(year, month, day, hour, minute)
     else:
-        hour = (hour - int(float(rfc[length-6:length-3]))) % 24
-        return datetime.datetime(year, month, day, hour, minute)
-
+        hourShift = int(float(rfc[length-6:length-3]))
+        result = datetime.datetime(year, month, day, hour, minute)
+        result -= datetime.timedelta(hours=hourShift)
+        return result
 
 def compareTimes(t1, t2, constVar):
     """t1 and t2 are in rfc format"""
@@ -540,42 +521,6 @@ class MainHandler(webapp.RequestHandler):
                 # show the user the registration page
                 path = os.path.join(os.path.dirname(__file__), 'registration.html')
                 self.response.out.write(template.render(path, {}))
-#                self.response.out.write('')
-#                if calendarClients.has_key(users.get_current_user().email()):
-#                    logging.info("has calendar key")
-#                    calendar_client = calendarClients[users.get_current_user().email()]
-#                    query = gdata.calendar.client.CalendarEventQuery()
-#                    query.max_results = 100000
-#                    
-#                    feed = calendar_client.GetOwnCalendarsFeed(q = query)
-#                    #ownerToCalendars[user.email()] = [] # to make sure that an entry is there so it doesn't run infinite loop
-#                    #for a_calendar in feed.entry:
-#                    calurl=[a_calendar.content.src for i, a_calendar in enumerate(feed.entry)]
-#                    for url in calurl:
-#                        urlSplitList = url.split("/")
-#                        cal_id = urlSplitList[5]
-#                        logging.info("cal_id here")
-#                        logging.info(cal_id)
-#                        dictAppend(user.email(), cal_id, ownerToCalendars)
-#                        dictAppend(cal_id, user.email(), calendarToOwners)
-#                        logging.info(cal_id)
-#                        returned_rule = shareDefaultCalendar(calendar_client, cal_id)
-#                    self.redirect("/")
-#                else:
-#                    logging.info("calender else")
-#                    calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
-#                    calendarClients[users.get_current_user().email()] = calendar_client
-#                    # if we don't have an access token already, get a request token
-#                    request_token = calendar_client.GetOAuthToken(
-#                        ['http://www.google.com/calendar/feeds'],
-#                        calendarCallbackUrl,
-#                        CONSUMER_KEY2,
-#                        CONSUMER_SECRET2)
-#                    
-#                    # save the token
-#                    gdata.gauth.AeSave(request_token, 'myCalendarKey')
-#                    
-#                    self.redirect(str(request_token.generate_authorization_url()))
             else: ## if user already registered
                 if contactsClients.has_key(users.get_current_user().email()): # if a contacts client is already available for current user
                     # use contact client that's available
@@ -860,7 +805,10 @@ def rfcToDateTimeText(rfc):
         hourText = str(hour - 12).zfill(2)
         hourSuffix = 'pm'
     else:
-        hourText = str(hour).zfill(2)
+        if hour == 0: # midnight
+            hourText = '12'
+        else:
+            hourText = str(hour).zfill(2)
         hourSuffix = 'am'
     dateTimeText = rfc[5:7] + '/' + \
                    rfc[8:10] + '/' + \
@@ -887,7 +835,6 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         user = users.get_current_user()
         
         email1 = user.email()
-#        emailList = [friend[0:-len('@gmail.com')] for friend in friends]
         emailList = friends
         emailList.append(email1)
         
@@ -895,15 +842,13 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         end_time_date = textDateTimeToDateTime(endTime)
         rfcStartTime = rfc3339(tzToGMT(start_time_date, timeZones[email1]))
         rfcEndTime = rfc3339(tzToGMT(end_time_date, timeZones[email1]))
-
-        logging.info('emailList')
-        logging.info(emailList)
-        logging.info(rfcStartTime)
-        logging.info(rfcEndTime)
-        logging.info('endEmailList')
         
         # the following line is the bottleneck
         commonEvents = findCommonEvents(overlordCalClient, emailList, rfcStartTime, rfcEndTime)
+        
+        for commonEvent in commonEvents:
+            commonEvent['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(commonEvent['startTime']), timeZones[users.get_current_user().email()])))
+            commonEvent['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(commonEvent['endTime']), timeZones[users.get_current_user().email()])))
         
         logging.info('what is the user')
         logging.info(user)
@@ -914,9 +859,7 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         
         self.response.headers['Content-Type'] = 'application/json'
         result = json.dumps(commonEvents)
-        self.response.out.write(result)
-#        logging.info(jsonData)
-        
+        self.response.out.write(result)        
     
 class FindCommonTimesHandler(webapp.RequestHandler):
     def get(self):
@@ -949,11 +892,6 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         
         endTimeList = endTime.split(' ')
         endTimeHMList = endTimeList[0].split(':')
-        logging.info("endTime")
-        logging.info(int(endTimeHMList[0]) \
-                                  + 12 * (endTimeList[1] == 'pm' and int(endTimeHMList[0]) != 12))
-        logging.info(int(endTimeHMList[0]))
-        logging.info(endTimeList[1])
         endTimePy = datetime.time(int(endTimeHMList[0]) \
                                   + 12 * (endTimeList[1] == 'pm' and int(endTimeHMList[0]) != 12),
                                   int(endTimeHMList[1]))
@@ -980,7 +918,6 @@ class FindCommonTimesHandler(webapp.RequestHandler):
                 d = {'startTime': startTime,
                      'endTime': endTime}
                 rfcCommonTimes.append(d)
-            logging.info(rfcCommonTimes)
         
         self.response.headers['Content-Type'] = 'application/json'
         result = json.dumps(rfcCommonTimes)
@@ -991,7 +928,6 @@ class FindEventsHandler(webapp.RequestHandler):
     def get(self):
         pass
     def post(self):
-        logging.info("Start findEventsHandler")
         jsonData = json.loads(self.request.get('jsonData'))
         startTime = jsonData['startTime'] # in mm/dd/yyyy TT:TT format
         endTime = jsonData['endTime'] # in mm/dd/yyyy TT:TT format
@@ -1008,11 +944,11 @@ class FindEventsHandler(webapp.RequestHandler):
         rfcStartTime = rfc3339(tzToGMT(start_time_date, timeZones[email1]))
         rfcEndTime = rfc3339(tzToGMT(end_time_date, timeZones[email1]))
         
-        logging.info('emailList')
-        logging.info(emailList)
-        logging.info('endEmailList')
         # look at FindCommonEventsHandler's post(self): for an example        
         events = findEventsInContactList(overlordCalClient, emailList, eventQuery, rfcStartTime, rfcEndTime)
+        for event in events:            
+            event['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['startTime']), timeZones[users.get_current_user().email()])))
+            event['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['endTime']), timeZones[users.get_current_user().email()])))
         
         logging.info('what is the user')
         logging.info(user)
