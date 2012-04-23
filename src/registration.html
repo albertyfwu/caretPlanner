@@ -15,10 +15,21 @@
 			
 			<div id="inner-wrap">
 				<span id="regWelcome">
-				Welcome to socialPlanner! To ensure the best service possible, we'll need to have access to your Google Calendars and Contacts. Please grant us the requisite permissions on the next few pages.
+				<p>Welcome to socialPlanner! To ensure the best service possible, we'll need to have access to your Google Calendars and Contacts. Please grant us the requisite permissions on the next few pages. 
+				By doing so, you will do the following:
+				<ul>
+				<li>Allow website to view google contacts</li>
+				<li>Share your calendars with the website</li>
+				<li>Gain access to using socialPlanner</li>
+				</UL>
+				</p>
+				<p>Of course, no one else other than the website admin account will be able to see your contacts or calendar information. <p/>
 				</span>
 				<div id="regContinueDiv">
 					<button id="regContinueButton">Continue</button>
+				</div>
+				<div id="takeMeOut">
+					<button id="takeMeOutButton">Take Me Out of Here!</button>
 				</div>
 			</div>
 			
@@ -33,6 +44,9 @@
 		<script>
 		$("#regContinueButton").click(function() {
 			window.location.href = "/registration";
+		});
+		$("#regContinueButton").click(function() {
+			window.location.href = "www.google.com";
 		});
 		</script>
 	</body>
