@@ -272,11 +272,12 @@
 					
 					$.post('/findCommonTimes', {jsonData: JSON.stringify(query)}, function(data) {
 						var html = "Results:<table id='findTimesResultsTable' class='resultsTable' width='100%'>";
-						html += '<thead><tr><th>Start time:</th></tr></thead><tbody>'
+						html += '<thead><tr><th>Start time:</th><th>End time:</th></tr></thead><tbody>'
 						for(var i = 0; i < data.length; i++) {
-							var startTime = data[i];
+							var timeSlot = data[i];
 							html += '<tr>';
-							html += '<td>' + startTime + '</td>';
+							html += '<td>' + timeSlot.startTime + '</td>';
+							html += '<td>' + timeSlot.endTime + '</td>';
 							html += '</tr>';
 						}
 						html += '</tbody></table>';

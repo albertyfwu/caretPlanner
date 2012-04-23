@@ -579,7 +579,7 @@ class MainHandler(webapp.RequestHandler):
                             if entry.name:
                                 for email in entry.email:
                                     if email.address.find('@gmail.com') != -1:
-                                        if email.address in ownerToCalendars:
+                                        if email.address in ownerToCalendars and email.address != users.get_current_user().email():
                                             contacts.append({'name':entry.name.full_name.text, 'email':email.address})
         #                            if email.primary and email.primary == 'true':
         #                                result += '     ' + email.address
@@ -830,6 +830,34 @@ def textDateTimeToDateTime(stringDate):
                                iTimeList[1])
     return pythonDateTime
 
+# add in time zone stuff here later
+def rfcToDateTimeText(rfc):
+    year = int(rfc[0:4])
+    month = int(rfc[5:7])
+    day = int(rfc[8:10])
+    hour = int(rfc[11:13])
+    minute = int(rfc[14:16])
+    # ignore seconds
+    
+    length = len(rfc)
+    if rfc[length-1] == 'z' or rfc[length-1] == 'Z':
+        logging.info('z')
+    else:
+        hour = (hour - int(float(rfc[length-6:length-3]))) % 24
+    if hour > 12:
+        hourText = str(hour - 12).zfill(2)
+        hourSuffix = 'pm'
+    else:
+        hourText = str(hour).zfill(2)
+        hourSuffix = 'am'
+    dateTimeText = rfc[5:7] + '/' + \
+                   rfc[8:10] + '/' + \
+                   rfc[0:4] + ' ' + \
+                   hourText + ':' + \
+                   rfc[14:16] + ' ' + \
+                   hourSuffix
+    return dateTimeText
+
 def tzToGMT(dateTime, timezone):
     return dateTime + datetime.timedelta(hours = -timezone)
 def GMTTotz(dateTime, timezone):
@@ -914,35 +942,21 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         
         timesDurationList = timesDuration.split(':')
         timesDurationInt = int(timesDurationList[0]) * 60 + int(timesDurationList[1])
-        
-        logging.info('emailList')
-        logging.info(emailList)
-        logging.info('endEmailList')
-        # look at FindCommonEventsHandler's post(self): for an example
-        
-        logging.info('startTimePy')
-        logging.info(startTimePy)
-        logging.info('endTimePy')
-        logging.info(endTimePy)
-        logging.info('startDatePy')
-        logging.info(startDatePy)
-        logging.info('timesDurationInt')
-        logging.info(timesDurationInt)
-        logging.info('dateDurationInt')
-        logging.info(dateDurationInt)
+                
         commonTimes = findTimes(overlordCalClient, emailList, startTimePy, endTimePy,
                                 startDatePy, timesDurationInt, dateDurationInt)
         output = []
         for st in commonTimes:
             output.append(GMTTotz(st, timeZones[email1]))
-            
-        logging.info('what is the user')
-        logging.info(user)
-        
-        logging.info('what are the times')
-        logging.info(commonTimes)
-        
-        rfcCommonTimes = [rfc3339(commonTime) for commonTime in commonTimes]
+                    
+        rfcCommonTimes = []
+        for commonTime in commonTimes:
+            # commonTime is a python datetime object
+            startTime = rfcToDateTimeText(rfc3339(commonTime))
+            endTime = rfcToDateTimeText(rfc3339(commonTime + datetime.timedelta(minutes=timesDurationInt)))
+            d = {'startTime': startTime,
+                 'endTime': endTime}
+            rfcCommonTimes.append(d)
         logging.info(rfcCommonTimes)
         
         self.response.headers['Content-Type'] = 'application/json'
