@@ -440,9 +440,10 @@ def rfcTodateTime(rfc):
     if rfc[length-1] == 'z' or rfc[length-1] == 'Z':
         return datetime.datetime(year, month, day, hour, minute)
     else:
-        hour = (hour - int(float(rfc[length-6:length-3]))) % 24
-        return datetime.datetime(year, month, day, hour, minute)
-
+        hourShift = int(float(rfc[length-6:length-3]))
+        result = datetime.datetime(year, month, day, hour, minute)
+        result -= datetime.timedelta(hours=hourShift)
+        return result
 
 def compareTimes(t1, t2, constVar):
     """t1 and t2 are in rfc format"""
@@ -853,7 +854,10 @@ def rfcToDateTimeText(rfc):
         hourText = str(hour - 12).zfill(2)
         hourSuffix = 'pm'
     else:
-        hourText = str(hour).zfill(2)
+        if hour == 0: # midnight
+            hourText = '12'
+        else:
+            hourText = str(hour).zfill(2)
         hourSuffix = 'am'
     dateTimeText = rfc[5:7] + '/' + \
                    rfc[8:10] + '/' + \
@@ -899,7 +903,6 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         commonEvents = findCommonEvents(overlordCalClient, emailList, rfcStartTime, rfcEndTime)
         
         for commonEvent in commonEvents:
-            logging.info(commonEvent)
             commonEvent['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(commonEvent['startTime']), timeZones[users.get_current_user().email()])))
             commonEvent['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(commonEvent['endTime']), timeZones[users.get_current_user().email()])))
         
@@ -1012,6 +1015,23 @@ class FindEventsHandler(webapp.RequestHandler):
         # look at FindCommonEventsHandler's post(self): for an example        
         events = findEventsInContactList(overlordCalClient, emailList, eventQuery, rfcStartTime, rfcEndTime)
         for event in events:
+            logging.info(event)
+            x = rfcTodateTime(event['startTime'])
+            y = timeZones[users.get_current_user().email()]
+            logging.info('rfcTodateTime')
+            logging.info(x)
+            logging.info('timeZones')
+            logging.info(y)
+            x = GMTTotz(x, y)
+            logging.info('GMTTotz')
+            logging.info(x)
+            x = rfc3339(x)
+            logging.info('rfc3339')
+            logging.info(x)
+            x = rfcToDateTimeText(x)
+            logging.info('rfcToDateTimeText')
+            logging.info(x)
+            
             event['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['startTime']), timeZones[users.get_current_user().email()])))
             event['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['endTime']), timeZones[users.get_current_user().email()])))
         
