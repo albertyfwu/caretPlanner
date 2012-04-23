@@ -948,18 +948,17 @@ class FindCommonTimesHandler(webapp.RequestHandler):
         commonTimes = findTimes(overlordCalClient, emailList, startTimePy, endTimePy,
                                 startDatePy, timesDurationInt, dateDurationInt)
         output = []
-        for st in commonTimes:
-            output.append(GMTTotz(st, timeZones[email1]))
-                    
         rfcCommonTimes = []
-        for commonTime in commonTimes:
-            # commonTime is a python datetime object
-            startTime = rfcToDateTimeText(rfc3339(commonTime))
-            endTime = rfcToDateTimeText(rfc3339(commonTime + datetime.timedelta(minutes=timesDurationInt)))
-            d = {'startTime': startTime,
-                 'endTime': endTime}
-            rfcCommonTimes.append(d)
-        logging.info(rfcCommonTimes)
+        if commonTimes != None:                        
+            rfcCommonTimes = []
+            for commonTime in commonTimes:
+                # commonTime is a python datetime object
+                startTime = rfcToDateTimeText(rfc3339(commonTime))
+                endTime = rfcToDateTimeText(rfc3339(commonTime + datetime.timedelta(minutes=timesDurationInt)))
+                d = {'startTime': startTime,
+                     'endTime': endTime}
+                rfcCommonTimes.append(d)
+            logging.info(rfcCommonTimes)
         
         self.response.headers['Content-Type'] = 'application/json'
         result = json.dumps(rfcCommonTimes)
