@@ -453,14 +453,21 @@ def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, contactsLis
     eventEnd - in rfc3339 format
     contactList - list of email addresses, must have @gmail.com
     """
+    startDate = rfcTodateTime(eventStart)
+    startDate = tzToGMT(startDate)
+    start = rfc3339(startDate)
     
+    endDate = rfcTodateTime(eventEnd)
+    endDate = tzToGMT(endDate)
+    end = rfc3339(endDate)
     url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
     event = gdata.calendar.data.CalendarEventEntry()
     event.title = atom.data.Title(text=eventName)
     event.content = atom.data.Content(text=content)
     event.where.append(gdata.data.Where(value=where))
-    event.when.append(gdata.data.When(start=eventStart,
-          end=eventEnd))
+
+    event.when.append(gdata.data.When(start=start,
+          end=end))
 #    for contact in contactsList:
 #        guest = gdata.calendar.Who()
 #        guest.email = contact ## This must have @gmail.com
