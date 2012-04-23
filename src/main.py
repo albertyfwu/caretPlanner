@@ -469,17 +469,6 @@ def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, contactsLis
     
     return new_event
 
-    
-def makeMessage(eventName, start, end, nickName):
-    subject = nickName + " has invited you to " + eventName
-    body="""
-    Dear Friend:
-    
-    %s has invited you to an event called %s from %s 
-    to %s. Click the button below to accept the invitation.
-    
-    socialPlanner
-    """
 class RegistrationHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
