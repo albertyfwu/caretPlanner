@@ -7,6 +7,7 @@ import re
 
 import FreeBusy
 
+from google.appengine.api import mail
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
@@ -443,6 +444,39 @@ def compareTimes(t1, t2, constVar):
     delta = d2 - d1
     return abs(24*60*60*delta.days + delta.seconds) < constVar * 60  
 
+def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, content = None, where = None):
+    """
+    calId - calendar ID
+    eventName - string representing name of event
+    eventStart - in rfc3339 format
+    eventEnd - in rfc3339 format
+    """
+    
+    url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
+    event = gdata.calendar.data.CalendarEventEntry()
+    event.title = atom.data.Title(text=eventName)
+    event.content = atom.data.Content(text=content)
+    event.where.append(gdata.data.Where(value=where))
+    event.when.append(gdata.data.When(start=eventStart,
+          end=eventEnd))
+    new_event = calClient.InsertEvent(event, url)
+    
+    return new_event
+
+def sendMail(contactsList, sender, subject, msgbody):
+    message = mail.EmailMessage(sender, subject)
+    contactString = ""
+    for contact in contactsList:
+        contactString += contact
+        contactString += ", "
+    contactString = contactString[:-2]
+    message.to = contactString
+    message.body = msgbody
+    
+    message.send()
+    
+def makeMessage(eventName, start, end, sender):
+    return None
 class RegistrationHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
