@@ -1003,7 +1003,17 @@ class FindEventsHandler(webapp.RequestHandler):
         result = json.dumps(events)
         self.response.out.write(result)
         
-        
+class ScheduleAnEventHandler(webapp.RequestHandler):
+    def get(self):
+        pass
+    def post(self):
+        jsonData = json.loads(self.request.get('jsonData'))
+        startTime = jsonData['startTime'] # in mm/dd/yyyy TT:TT format
+        endTime = jsonData['endTime'] # in mm/dd/yyyy TT:TT format
+        calId = jsonData['eventQuery']
+        eventName = jsonData['eventName']
+        friends = jsonData['friends']
+            
 class PoopHandler(webapp.RequestHandler):
     def get(self):
         self.response.out.write(ownerToCalendars)
@@ -1024,6 +1034,7 @@ application = webapp.WSGIApplication(
      ('/findCommonEvents', FindCommonEventsHandler),
      ('/findCommonTimes', FindCommonTimesHandler),
      ('/findEvents', FindEventsHandler),
+     ('/scheduleAnEvent', ScheduleAnEventHandler),
      ('/poop', PoopHandler),
      ('/debug', DebugHandler)],
     debug=True)

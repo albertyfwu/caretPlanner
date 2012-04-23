@@ -272,12 +272,15 @@
 					
 					$.post('/findCommonTimes', {jsonData: JSON.stringify(query)}, function(data) {
 						var html = "Results:<table id='findTimesResultsTable' class='resultsTable' width='100%'>";
-						html += '<thead><tr><th>Start time:</th><th>End time:</th></tr></thead><tbody>'
+						html += '<thead><tr><th>Start time:</th><th>End time:</th><th></th></tr></thead><tbody>'
 						for(var i = 0; i < data.length; i++) {
 							var timeSlot = data[i];
 							html += '<tr>';
 							html += '<td>' + timeSlot.startTime + '</td>';
 							html += '<td>' + timeSlot.endTime + '</td>';
+							html += "<td><input type='submit' startTime='" + timeSlot.startTime + 
+									"' endTime='" + timeSlot.endTime + 
+									"' value='Schedule it' class='scheduleEventButton'/></td>";
 							html += '</tr>';
 						}
 						html += '</tbody></table>';
@@ -296,10 +299,12 @@
 				$(".contact:checked").each(function() {
 					friends.push($(this).val());
 				});
-				var query = {startTime: startTime,
-							 endTime: endTime,
-							 eventQuery: eventQuery,
-							 friends: friends};
+				var query = {
+					startTime: startTime,
+					endTime: endTime,
+					eventQuery: eventQuery,
+					friends: friends
+				};
 				
 				if (friends.length == 0) {
 					alert("Please select at least one friend.")
@@ -325,6 +330,31 @@
 						$("#findEventsSearchResultsDiv").html(html);
 					});
 				}
+			});
+			
+			$(".scheduleEventButton").click(function() {
+				var startTime = $(this).attr('startTime');
+				var endTime = $(this).attr('endTime');
+				var calId = 'default';
+				var eventName = 'a new event';
+				var friends = [];
+				$(".contact:checked").each(function() {
+					friends.push($(this).val());
+				});
+				
+				query = {
+					startTime: startTime,
+					endTime: endTime,
+					calId: calId,
+					eventName: eventName,
+					friends: friends
+				}
+				
+				alert(startTime);
+				
+				$.post('/scheduleAnEvent', {jsonData: JSON.stringify(query)}, function(data) {
+					alert('Scheduling successful');
+				});
 			});
 		</script>
 	</body>
