@@ -343,7 +343,7 @@
 				$(".contact:checked").each(function() {
 					friends.push($(this).val());
 				});
-				alert('after parsing');
+// 				alert('after parsing');
 				
 				query = {
 					startTime: startTime,
@@ -353,7 +353,7 @@
 					friends: friends
 				}
 				
-				alert(startTime);
+// 				alert(startTime);
 				
 				$.post('/scheduleAnEvent', {jsonData: JSON.stringify(query)}, function(data) {
 					alert('Scheduling successful');
