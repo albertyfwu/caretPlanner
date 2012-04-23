@@ -12,7 +12,6 @@
 			$(".dateTimePicker").datetimepicker({
 				ampm: true
 			});
-// 			alert('hello');
 		});
 		</script>
 	</head>
@@ -50,14 +49,9 @@
 								<img src='img/loader.gif' />
 							</div>
 							<div id="findEventsResultsDiv">
-							<font size ="14">
-								<!-- initially empty -->
-								<table>
-									<tr>
-										<td>Test</td><td>Test2</td><td>Test3</td>
-									</tr>
+								<table id="findEventsResultsTable">
+<!-- 									nothing for now -->
 								</table>
-							</font>
 							</div>
 						</div>
 					</div>
@@ -244,8 +238,8 @@
 					$("#findEventsLoader").show();
 					
 					$.post('/findCommonEvents', {jsonData: JSON.stringify(query)}, function(data) {
-						var html = "Results:<table border=1 width='100%'>";
-						html += '<thead><tr><td>Name</td><td>Start</td><td>End</td></tr></thead><tbody>';
+						var html = "Results:<table id='findEventsResultsTable' width='100%'>";
+						html += '<thead><tr><th>Name</th><th>Start</th><th>End</th></tr></thead><tbody>';
 						for(var i = 0; i < data.length; i++) {
 							var event = data[i];
 							html += '<tr>';
