@@ -25,11 +25,6 @@ class FreeBusy:
     def addEventFeed(self, eventFeed, startLimit, endLimit):
         for event in eventFeed:
             for when in event.when:
-                logging.info('when.start')
-                logging.info(when.start)
-                logging.info(when.end)
-                logging.info('name of when.start event')
-                logging.info(event.title.text)
                 start = rfcTodateTime(when.start)
                 end = rfcTodateTime(when.end)
                 if (start.time() >= startLimit and start.time() <= endLimit) \
