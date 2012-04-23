@@ -57,6 +57,7 @@
 						</div>
 					</div>
 					<div id="tabs-2">
+					
 						I want to schedule an event some time between the hours of <input type="text"  value="" class="timePicker" id="timesStartTime" />
 						and <input type="text" value="" class="timePicker" id="timesEndTime" />. I want this event to occur on 
 						<input type="text" value="" class="datePicker" id="timesStartDate" /> or within the 					
@@ -280,7 +281,7 @@
 							html += '<td>' + timeSlot.endTime + '</td>';
 							html += "<td><input type='submit' startTime='" + timeSlot.startTime + 
 									"' endTime='" + timeSlot.endTime + 
-									"' value='Schedule it' class='scheduleEventButton'/></td>";
+									"' value='Schedule it' class='scheduleEventButton' /></td>";
 							html += '</tr>';
 						}
 						html += '</tbody></table>';
@@ -332,15 +333,16 @@
 				}
 			});
 			
-			$(".scheduleEventButton").click(function() {
-				var startTime = $(this).attr('startTime');
-				var endTime = $(this).attr('endTime');
+			$(".scheduleEventButton").live('click', function() {
+				var startTime = $(this).attr('starttime');
+				var endTime = $(this).attr('endtime');
 				var calId = 'default';
 				var eventName = 'a new event';
 				var friends = [];
 				$(".contact:checked").each(function() {
 					friends.push($(this).val());
 				});
+				alert('after parsing');
 				
 				query = {
 					startTime: startTime,

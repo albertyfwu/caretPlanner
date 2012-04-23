@@ -1008,12 +1008,22 @@ class ScheduleAnEventHandler(webapp.RequestHandler):
         pass
     def post(self):
         jsonData = json.loads(self.request.get('jsonData'))
-        startTime = jsonData['startTime'] # in mm/dd/yyyy TT:TT format
-        endTime = jsonData['endTime'] # in mm/dd/yyyy TT:TT format
-        calId = jsonData['eventQuery']
+        startTime = jsonData['startTime'] # in mm/dd/yyyy TT:TT pm format
+        endTime = jsonData['endTime'] # in mm/dd/yyyy TT:TT pm format
+        calId = jsonData['calId']
         eventName = jsonData['eventName']
         friends = jsonData['friends']
-            
+        
+        startTimeRfc = textDateTimeToRfc(startTime)
+        endTimeRfc = textDateTimeToRfc(endTime)
+        
+        client = calendarClients[users.get_current_user().email()]   
+        
+        if scheduleEvent(client, calId, eventName, startTimeRfc, endTimeRfc, friends):
+            self.response.out.write('success')
+        else:
+            self.response.out.write('failure')
+                 
 class PoopHandler(webapp.RequestHandler):
     def get(self):
         self.response.out.write(ownerToCalendars)
