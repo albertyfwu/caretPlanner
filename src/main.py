@@ -461,10 +461,10 @@ def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, contactsLis
     event.where.append(gdata.data.Where(value=where))
     event.when.append(gdata.data.When(start=eventStart,
           end=eventEnd))
-    for contact in contactsList:
-        guest = gdata.calendar.Who()
-        guest.email = contact ## This must have @gmail.com
-        event.who.append(guest)
+#    for contact in contactsList:
+#        guest = gdata.calendar.Who()
+#        guest.email = contact ## This must have @gmail.com
+#        event.who.append(guest)
     new_event = calClient.InsertEvent(event, url)
     
     return new_event
