@@ -454,11 +454,11 @@ def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, contactsLis
     contactList - list of email addresses, must have @gmail.com
     """
     startDate = rfcTodateTime(eventStart)
-    startDate = tzToGMT(startDate)
+    startDate = tzToGMT(startDate, timeZones[users.get_current_user().email()])
     start = rfc3339(startDate)
     
     endDate = rfcTodateTime(eventEnd)
-    endDate = tzToGMT(endDate)
+    endDate = tzToGMT(endDate, timeZones[users.get_current_user().email()])
     end = rfc3339(endDate)
     url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
     event = gdata.calendar.data.CalendarEventEntry()
