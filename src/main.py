@@ -898,6 +898,11 @@ class FindCommonEventsHandler(webapp.RequestHandler):
         # the following line is the bottleneck
         commonEvents = findCommonEvents(overlordCalClient, emailList, rfcStartTime, rfcEndTime)
         
+        for commonEvent in commonEvents:
+            logging.info(commonEvent)
+            commonEvent['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(commonEvent['startTime']), timeZones[users.get_current_user().email()])))
+            commonEvent['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(commonEvent['endTime']), timeZones[users.get_current_user().email()])))
+        
         logging.info('what is the user')
         logging.info(user)
         
