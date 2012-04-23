@@ -465,27 +465,17 @@ def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, contactsLis
     event.title = atom.data.Title(text=eventName)
     event.content = atom.data.Content(text=content)
     event.where.append(gdata.data.Where(value=where))
+
     event.when.append(gdata.data.When(start=start,
           end=end))
-    for contact in contactsList:
-        guest = gdata.calendar.Who()
-        guest.email = contact ## This must have @gmail.com
-        event.who.append(guest)
+#    for contact in contactsList:
+#        guest = gdata.calendar.Who()
+#        guest.email = contact ## This must have @gmail.com
+#        event.who.append(guest)
     new_event = calClient.InsertEvent(event, url)
     
     return new_event
 
-    
-def makeMessage(eventName, start, end, nickName):
-    subject = nickName + " has invited you to " + eventName
-    body="""
-    Dear Friend:
-    
-    %s has invited you to an event called %s from %s 
-    to %s. Click the button below to accept the invitation.
-    
-    socialPlanner
-    """
 class RegistrationHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
