@@ -52,6 +52,11 @@ body {
 	color:black;
 }
 
+#takeMeOutButton {
+	padding:4px;
+	color:black;
+}
+
 #regContinueDiv {
 	text-align:center;
 }
