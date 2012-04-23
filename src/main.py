@@ -532,12 +532,14 @@ class MainHandler(webapp.RequestHandler):
         #                        result += '<br />'
                         
                         contacts.sort(key = lambda x: x['name'])
+                        contactsLen = len(contacts)
                 
         #                self.response.out.write(result)
                         template_values = {
                             'username': users.get_current_user().nickname(),
                             'signOutUrl': users.create_logout_url('/'),
-                            'contacts': contacts
+                            'contacts': contacts,
+                            'contactsLen': contactsLen
                         }
             
                         path = os.path.join(os.path.dirname(__file__), 'index.html')

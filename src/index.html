@@ -101,15 +101,14 @@
 					</div>
 										
 					<div id="contacts">
-						{% for contact in contacts %}
-							<input class="contact" type="checkbox" value="{{ contact.email }}">{{ contact.name }}<br />
-						{% endfor %}
+						{% if contactsLen == 0 %}
+							You have no contacts on socialPlanner.
+						{% else %}
+							{% for contact in contacts %}
+								<input class="contact" type="checkbox" value="{{ contact.email }}">{{ contact.name }}<br />
+							{% endfor %}
+						{% endif %}
 					</div>
-<!-- 					<div id="circleButtons"> -->
-<!-- 						<button id="compareButton">Compare</button> -->
-<!-- 						<button id="scheduleButton">Schedule</button> -->
-<!-- 					</div> -->
-
 				</div>
 			</div>
 			
@@ -363,9 +362,13 @@
 			$("#refreshListButton").click(function() {
 				$.post('/refreshContactsList', function(data) {
 					html = '';
-					for(var i = 0; i < data.length; i++) {
-						contact = data[i];
-						html += "<input class='contact' type='checkbox' value='" + contact.email + "'>" + contact.name + "<br />";
+					if (data.length == 0) {
+						html = 'You have no contacts on socialPlanner';
+					} else {
+						for(var i = 0; i < data.length; i++) {
+							contact = data[i];
+							html += "<input class='contact' type='checkbox' value='" + contact.email + "'>" + contact.name + "<br />";
+						}
 					}
 					$("#contacts").html(html);
 				});
