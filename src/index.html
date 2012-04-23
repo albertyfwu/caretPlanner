@@ -334,10 +334,11 @@
 			});
 			
 			$(".scheduleEventButton").live('click', function() {
+				// ask for an event name
+				var eventName = prompt("Give a name for the event:");
 				var startTime = $(this).attr('starttime');
 				var endTime = $(this).attr('endtime');
 				var calId = 'default';
-				var eventName = 'a new event';
 				var friends = [];
 				$(".contact:checked").each(function() {
 					friends.push($(this).val());
