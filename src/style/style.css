@@ -15,6 +15,15 @@ body {
 .ui-timepicker-div td { font-size: 90%; }
 .ui-tpicker-grid-label { background: none; border: none; margin: 0; padding: 0; }
 
+#contactsDescription {
+	font-size:12px;
+}
+
+.funcOutsideDiv {
+	overflow:auto;
+	height:70%;
+}
+
 #header-wrap {
 	top:0;
 	background-color:#f0f0f0;
