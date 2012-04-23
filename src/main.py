@@ -1011,6 +1011,9 @@ class FindEventsHandler(webapp.RequestHandler):
         logging.info('endEmailList')
         # look at FindCommonEventsHandler's post(self): for an example        
         events = findEventsInContactList(overlordCalClient, emailList, eventQuery, rfcStartTime, rfcEndTime)
+        for event in events:
+            event['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['startTime']), timeZones[users.get_current_user().email()])))
+            event['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['endTime']), timeZones[users.get_current_user().email()])))
         
         logging.info('what is the user')
         logging.info(user)
