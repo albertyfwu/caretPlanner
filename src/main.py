@@ -104,6 +104,19 @@ def dictAdd(key, value, d):
     else:
         d[key] = value
 
+def getCalendarNames(calClient, calIdList):
+    feed = calClient.GetOwnCalendarsFeed()
+    calurl=[a_calendar.content.src for i, a_calendar in enumerate(feed.entry)]
+    outputDict = {}
+    for a_calendar in feed.entry:
+        url = a_calendar.content.src
+        urlSplitList = url.split("/")
+        cal_id = urlSplitList[5]
+        if cal_id in calIdList:
+            outputDict[cal_id] = a_calendar.title.text
+    return outputDict
+    
+        
 def _RetrieveAclRule(username, calClient, cal_id):
     """Retrieves the entry associated with the Access Control Rule of the given username for
     the primary calendar of the calClient"""
@@ -203,15 +216,6 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
                 freeBusy.addEventFeed(eventFeed, start_time, end_time)
             if not freeBusy.isEmpty():
                 freeBusyList.append(freeBusy)
-                
-    logging.info("freeBusyList")
-    logging.info(len(freeBusyList))
-    sortedList = freeBusyList[0].timesList
-    sortedList.sort()
-    logging.info(sortedList)
-    sortedList2 = freeBusyList[1].timesList
-    sortedList2.sort()
-    logging.info(sortedList2)
     
     bestTimes = {}
     
@@ -227,10 +231,6 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
                     bestTimes[currentStart] += 1
             currentStart += datetime.timedelta(0, 900)
             currentEnd += datetime.timedelta(0, 900)
-        
-    logging.info("bestTimes")
-    logging.info(bestTimes)
-    
     
     max_value = max(bestTimes.values())
     logging.info(max_value)
@@ -240,7 +240,7 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
     for key in bestTimes.keys():
         if (bestTimes[key] == max_value):
             output.append(key)
-            
+    output.sort()
     return output
 
 def findEventsInContactList(calClient, contactsList, text_query, start_date, end_date):
@@ -444,12 +444,13 @@ def compareTimes(t1, t2, constVar):
     delta = d2 - d1
     return abs(24*60*60*delta.days + delta.seconds) < constVar * 60  
 
-def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, content = None, where = None):
+def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, contactsList, content = None, where = None):
     """
     calId - calendar ID
     eventName - string representing name of event
     eventStart - in rfc3339 format
     eventEnd - in rfc3339 format
+    contactList - list of email addresses, must have @gmail.com
     """
     
     url = "https://www.google.com/calendar/feeds/"+calId+"/private/full"
@@ -459,24 +460,25 @@ def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, content = N
     event.where.append(gdata.data.Where(value=where))
     event.when.append(gdata.data.When(start=eventStart,
           end=eventEnd))
+    for contact in contactsList:
+        guest = gdata.calendar.Who()
+        guest.email = contact ## This must have @gmail.com
+        event.who.append(guest)
     new_event = calClient.InsertEvent(event, url)
     
     return new_event
 
-def sendMail(contactsList, sender, subject, msgbody):
-    message = mail.EmailMessage(sender, subject)
-    contactString = ""
-    for contact in contactsList:
-        contactString += contact
-        contactString += ", "
-    contactString = contactString[:-2]
-    message.to = contactString
-    message.body = msgbody
     
-    message.send()
+def makeMessage(eventName, start, end, nickName):
+    subject = nickName + " has invited you to " + eventName
+    body="""
+    Dear Friend:
     
-def makeMessage(eventName, start, end, sender):
-    return None
+    %s has invited you to an event called %s from %s 
+    to %s. Click the button below to accept the invitation.
+    
+    socialPlanner
+    """
 class RegistrationHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
