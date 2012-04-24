@@ -95,7 +95,6 @@
 				<div id="sidebar">
 					<div id="contactsTitleDiv">
 						<span id="contactsTitle">Contacts</span>
-						<input type="submit" id="refreshListButton" value="Refresh list" />
 						<br />
 						<span id="contactsDescription">Select your friends here:</span>
 					</div>
@@ -356,21 +355,6 @@
 				
 				$.post('/scheduleAnEvent', {jsonData: JSON.stringify(query)}, function(data) {
 					alert('Scheduling successful');
-				});
-			});
-			
-			$("#refreshListButton").click(function() {
-				$.post('/refreshContactsList', function(data) {
-					html = '';
-					if (data.length == 0) {
-						html = 'You have no contacts on socialPlanner';
-					} else {
-						for(var i = 0; i < data.length; i++) {
-							contact = data[i];
-							html += "<input class='contact' type='checkbox' value='" + contact.email + "'>" + contact.name + "<br />";
-						}
-					}
-					$("#contacts").html(html);
 				});
 			});
 		</script>

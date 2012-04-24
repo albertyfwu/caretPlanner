@@ -971,29 +971,6 @@ class ScheduleAnEventHandler(webapp.RequestHandler):
             self.response.out.write('success')
         else:
             self.response.out.write('failure')
-            
-class RefreshContactsListHandler(webapp.RequestHandler):
-    def get(self):
-        pass
-    def post(self):
-        contacts = []
-        contacts_client = contactsClients[users.get_current_user().email()]
-        query = gdata.contacts.client.ContactsQuery()
-        query.max_results = 100000
-        feed = contacts_client.GetContacts(q = query)
-        
-        for i, entry in enumerate(feed.entry):
-            if entry.name:
-                for email in entry.email:
-                    if email.address.find('@gmail.com') != -1:
-                        if email.address in ownerToCalendars and email.address != users.get_current_user().email():
-                            contacts.append({'name':entry.name.full_name.text, 'email':email.address})
-        
-        contacts.sort(key = lambda x: x['name'])
-        
-        self.response.headers['Content-Type'] = 'application/json'
-        result = json.dumps(contacts)
-        self.response.out.write(result) 
         
 application = webapp.WSGIApplication(
     [('/', MainHandler),
@@ -1007,8 +984,7 @@ application = webapp.WSGIApplication(
      ('/findCommonEvents', FindCommonEventsHandler),
      ('/findCommonTimes', FindCommonTimesHandler),
      ('/findEvents', FindEventsHandler),
-     ('/scheduleAnEvent', ScheduleAnEventHandler),
-     ('/refreshContactsList', RefreshContactsListHandler)],
+     ('/scheduleAnEvent', ScheduleAnEventHandler)],
     debug=True)
 
 def main():
