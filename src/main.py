@@ -1,33 +1,19 @@
-import os
-
-import time
-import datetime
-from rfc3339 import rfc3339
-import re
-
-import FreeBusy
-
-from google.appengine.api import mail
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
-from google.appengine.ext.webapp import template
-
 from google.appengine.api import users
-
+from google.appengine.ext import webapp
+from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp.util import run_wsgi_app
+from rfc3339 import rfc3339
+import FreeBusy
 import atom.data
-import gdata.data
+import datetime
 import gdata.acl
-import gdata.contacts.client
-
 import gdata.calendar.client
-import gdata.calendar.service
-
-import atom.http_core
+import gdata.contacts.client
+import gdata.data
 import gdata.gauth
-
-import logging
-
 import json
+import logging
+import os
 import re
 
 runningLocally = True
@@ -971,6 +957,27 @@ class ScheduleAnEventHandler(webapp.RequestHandler):
             self.response.out.write('success')
         else:
             self.response.out.write('failure')
+            
+class ResetHandler(webapp.RequestHandler):
+    def get(self):            
+        path = os.path.join(os.path.dirname(__file__), 'reset.html')
+        self.response.out.write(template.render(path, {}))
+    def post(self):
+        global contactsClients
+        global calendarClients
+        global ownerToCalendars
+        global calendarToOwners
+        global sharedToCalendars
+        global timeZones
+        # reset everything
+        contactsClients = {} # dictionary for ContactsClients
+        calendarClients = {} # dictionary for calendarClients        
+        ownerToCalendars = {} # string owner email address -- > list of calendar IDs
+        calendarToOwners = {} # string calendar IDs --> list of owners
+        sharedToCalendars = {} # string email address --> list of calendar IDs he is shared with
+        timeZones = {} # string owner email address --> time zone (integer -12 to 12, representing how many hours ahead or behind he is)
+
+        self.response.out.write('Reset successful')
         
 application = webapp.WSGIApplication(
     [('/', MainHandler),
@@ -984,7 +991,8 @@ application = webapp.WSGIApplication(
      ('/findCommonEvents', FindCommonEventsHandler),
      ('/findCommonTimes', FindCommonTimesHandler),
      ('/findEvents', FindEventsHandler),
-     ('/scheduleAnEvent', ScheduleAnEventHandler)],
+     ('/scheduleAnEvent', ScheduleAnEventHandler),
+     ('/reset', ResetHandler)],
     debug=True)
 
 def main():
