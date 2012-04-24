@@ -225,6 +225,9 @@ def findTimes (calClient, contactsList, start_time, end_time, start_date, durati
                     bestTimes[currentStart] += 1
             currentStart += datetime.timedelta(0, 900)
             currentEnd += datetime.timedelta(0, 900)
+    if len(bestTimes.values()) == 0:
+        return None
+        
     max_value = max(bestTimes.values())
     if max_value == 0:
         return None
