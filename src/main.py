@@ -46,6 +46,8 @@ sharedToCalendars = {} # string email address --> list of calendar IDs he is sha
 timeZones = {} # string owner email address --> time zone (integer -12 to 12, representing how many hours ahead or behind he is)
 defaultTZ = -4
 
+calIdToColor = {} # calendar ID to color of calendar
+
 overlordCalClient = gdata.calendar.client.CalendarClient(source = 'caretPlanner')
 overlordCalClient.ClientLogin('socialplanner21@gmail.com', 'social21w785', overlordCalClient.source);
 ### Helper Functions for Dictionary Handling
@@ -463,12 +465,17 @@ class RegistrationHandler(webapp.RequestHandler):
             feed = calendar_client.GetOwnCalendarsFeed(q = query)
 #            ownerToCalendars[user.email()] = [] # to make sure that an entry is there so it doesn't run infinite loop
             #for a_calendar in feed.entry:
-            calurl=[a_calendar.content.src for i, a_calendar in enumerate(feed.entry)]
+            calurl = {}
+            for i, a_calendar in enumerate(feed.entry):
+                calurl[a_calendar.content.src] = a_calendar.color.value
+#            calurl=[a_calendar.content.src for i, a_calendar in enumerate(feed.entry)]
+#            calcolor=[a_calendar.color for i, a_calendar in enumerate(feed.entry)]
             for url in calurl:
                 urlSplitList = url.split("/")
                 cal_id = urlSplitList[5]
                 dictAppend(user.email(), cal_id, ownerToCalendars)
                 dictAppend(cal_id, user.email(), calendarToOwners)
+                calIdToColor[cal_id] = calurl[url]
                 returned_rule = shareDefaultCalendar(calendar_client, cal_id)
             self.redirect("/")
         else:
@@ -520,12 +527,16 @@ class MainHandler(webapp.RequestHandler):
                         
                         contacts.sort(key = lambda x: x['name'])
                         contactsLen = len(contacts)
+                        
+                        calendarsString = ''
+                        for calendar in ownerToCalendars[users.get_current_user().email()]:
+                            calendarsString += 'src=' + calendar + '&color=%23' + calIdToColor[calendar][1:] + '&'
                 
                         template_values = {
-                            'username': users.get_current_user().nickname(),
                             'signOutUrl': users.create_logout_url('/'),
                             'contacts': contacts,
-                            'contactsLen': contactsLen
+                            'contactsLen': contactsLen,
+                            'calendarsString': calendarsString
                         }
             
                         path = os.path.join(os.path.dirname(__file__), 'index.html')
@@ -547,48 +558,7 @@ class MainHandler(webapp.RequestHandler):
                     
                     self.redirect(str(request_token.generate_authorization_url()))
         else:
-            self.redirect(users.create_login_url(self.request.uri))
-        
-#class RegistrationHandler
-#    def get(self):
-#        self.response.out.write("hi")
-##        if calendarClients.has_key(users.get_current_user()):
-##            calendar_client = calendarClients[users.get_current_user()]
-#            rule = {
-#                'scope': {
-#                          'type': 'user',
-#                          'value': 'socialplanner21@gmail.com',
-#                          },
-#                'role': 'reader'
-#            }
-#
-#            created_rule = service.acl().insert(calendarId='primary', body=rule).execute()
-#            query = gdata.calendar.client.CalendarEventQuery()
-#            query.max_results = 100000
-#            feed = calendar_client.GetAllCalendarsFeed(q = query)
-#            result = 'Printing all calendars: %s' % feed.title.text
-#            for i, a_calendar in zip(xrange(len(feed.entry)), feed.entry):
-#                result += '\t%s. %s' % (i, a_calendar.title.text,)
-#            
-#            self.response.out.write(result)
-#            
-#        else:
-#            calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
-#            calendarClients[users.get_current_user()] = calendar_client
-#             if we don't have an access token already, get a request token
-#            request_token = calendar_client.GetOAuthToken(
-#                ['http://www.google.com/calendar/feeds'],
-#                'http://caretplanner.appspot.com/oauth2callback',
-#                'http://localhost:8080/oauth2callback',
-#                CONSUMER_KEY,
-#                CONSUMER_SECRET)
-#            
-#             save the token
-#            gdata.gauth.AeSave(request_token, 'myRegistrationKey')
-#            
-#            self.redirect(str(request_token.generate_authorization_url()))
-        
-
+            self.redirect(users.create_login_url(self.request.uri))     
 
 class AboutHandler(webapp.RequestHandler):
     def get(self):
@@ -993,11 +963,7 @@ class ResetHandler(webapp.RequestHandler):
         timeZones = {} # string owner email address --> time zone (integer -12 to 12, representing how many hours ahead or behind he is)
 
         self.response.out.write('Reset successful')
-        
-class DebugHandler(webapp.RequestHandler):
-    def get(self):
-        self.response.out.write(ownerToCalendars)
-        
+                
 application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
@@ -1011,8 +977,7 @@ application = webapp.WSGIApplication(
      ('/findCommonTimes', FindCommonTimesHandler),
      ('/findEvents', FindEventsHandler),
      ('/scheduleAnEvent', ScheduleAnEventHandler),
-     ('/reset', ResetHandler),
-     ('/debug', DebugHandler)],
+     ('/reset', ResetHandler)],
     debug=True)
 
 def main():
