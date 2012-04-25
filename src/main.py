@@ -510,21 +510,17 @@ class MainHandler(webapp.RequestHandler):
                         query = gdata.contacts.client.ContactsQuery()
                         query.max_results = 100000
                         feed = contacts_client.GetContacts(q = query)
-                        
+                                                
                         for i, entry in enumerate(feed.entry):
                             if entry.name:
                                 for email in entry.email:
                                     if email.address.find('@gmail.com') != -1:
                                         if email.address in ownerToCalendars and email.address != users.get_current_user().email():
                                             contacts.append({'name':entry.name.full_name.text, 'email':email.address})
-        #                            if email.primary and email.primary == 'true':
-        #                                result += '     ' + email.address
-        #                        result += '<br />'
                         
                         contacts.sort(key = lambda x: x['name'])
                         contactsLen = len(contacts)
                 
-        #                self.response.out.write(result)
                         template_values = {
                             'username': users.get_current_user().nickname(),
                             'signOutUrl': users.create_logout_url('/'),
@@ -925,7 +921,7 @@ class FindEventsHandler(webapp.RequestHandler):
                 for email in entry.email:
                     if email.address.find('@gmail.com') != -1:
                         if email.address in ownerToCalendars and email.address != users.get_current_user().email():
-                            contacts.append({'name':entry.name.full_name.text, 'email':email.address})
+                            contacts.append(email.address)
                 
         user = users.get_current_user()
         
@@ -936,6 +932,9 @@ class FindEventsHandler(webapp.RequestHandler):
         end_time_date = textDateTimeToDateTime(endTime)
         rfcStartTime = rfc3339(tzToGMT(start_time_date, timeZones[email1]))
         rfcEndTime = rfc3339(tzToGMT(end_time_date, timeZones[email1]))
+        
+        logging.info('contacts')
+        logging.info(contacts)
         
         # look at FindCommonEventsHandler's post(self): for an example        
         events = findEventsInContactList(overlordCalClient, emailList, eventQuery, rfcStartTime, rfcEndTime)
@@ -995,6 +994,10 @@ class ResetHandler(webapp.RequestHandler):
 
         self.response.out.write('Reset successful')
         
+class DebugHandler(webapp.RequestHandler):
+    def get(self):
+        self.response.out.write(ownerToCalendars)
+        
 application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
@@ -1008,7 +1011,8 @@ application = webapp.WSGIApplication(
      ('/findCommonTimes', FindCommonTimesHandler),
      ('/findEvents', FindEventsHandler),
      ('/scheduleAnEvent', ScheduleAnEventHandler),
-     ('/reset', ResetHandler)],
+     ('/reset', ResetHandler),
+     ('/debug', DebugHandler)],
     debug=True)
 
 def main():

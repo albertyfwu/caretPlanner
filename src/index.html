@@ -57,7 +57,7 @@
 						</div>
 					</div>
 					<div id="tabs-2">
-					
+						First, select some friends on the left. Now:<br />
 						I want to schedule an event some time between the hours of <input type="text"  value="" class="timePicker" id="timesStartTime" />
 						and <input type="text" value="" class="timePicker" id="timesEndTime" />. I want this event to occur on 
 						<input type="text" value="" class="datePicker" id="timesStartDate" /> or within the 					
@@ -295,15 +295,15 @@
 				var startTime = $("#eventsSearchStartTime").val();
 				var endTime = $("#eventsSearchEndTime").val();
 				var eventQuery = $("#findEventsSearchTextQuery").val();
-				var friends = [];
-				$(".contact:checked").each(function() {
-					friends.push($(this).val());
-				});
+// 				var friends = [];
+// 				$(".contact:checked").each(function() {
+// 					friends.push($(this).val());
+// 				});
 				var query = {
 					startTime: startTime,
 					endTime: endTime,
-					eventQuery: eventQuery,
-					friends: friends
+					eventQuery: eventQuery
+// 					friends: friends
 				};
 				
 // 				if (friends.length == 0) {
@@ -321,7 +321,7 @@
 						html += '<tr>';
 						html += '<td>' + event.name + '</td>';
 						html += '<td>' + event.owner + '</td>';
-// 						html += '<td>' + event.startTime + '</td>';
+						html += '<td>' + event.startTime + '</td>';
 						html += '<td>' + event.endTime + '</td>';
 						html += '</tr>';
 					}
