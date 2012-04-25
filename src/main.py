@@ -282,9 +282,9 @@ def _findEvents(calClient, calId, text_query, start_date, end_date, owner):
                     output.append(d)
         return output
     else:
-        return _googleFindEvents(calClient, calId, text_query, start_date, end_date)
+        return _googleFindEvents(calClient, calId, text_query, start_date, end_date, owner)
     
-def _googleFindEvents(calClient, calId, text_query, start_date, end_date):
+def _googleFindEvents(calClient, calId, text_query, start_date, end_date, owner):
     """ Uses google's search function to find events with similar names.
     Does not work for class names for some reason"""
     
@@ -297,7 +297,8 @@ def _googleFindEvents(calClient, calId, text_query, start_date, end_date):
         start, end = _getWhen(an_event)
         d = {'startTime': start,
              'endTime': end,
-             'name': an_event.title.text}
+             'name': an_event.title.text,
+             'owner': owner}
         output.append(d)
     
     return output
