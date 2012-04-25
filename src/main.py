@@ -912,12 +912,24 @@ class FindEventsHandler(webapp.RequestHandler):
         startTime = jsonData['startTime'] # in mm/dd/yyyy TT:TT format
         endTime = jsonData['endTime'] # in mm/dd/yyyy TT:TT format
         eventQuery = jsonData['eventQuery']
-        friends = jsonData['friends'] # in list format of @gmail.com addresses
+#        friends = jsonData['friends'] # in list format of @gmail.com addresses
+        contacts = []
+        contacts_client = contactsClients[users.get_current_user().email()]
+        query = gdata.contacts.client.ContactsQuery()
+        query.max_results = 100000
+        feed = contacts_client.GetContacts(q = query)
         
+        for i, entry in enumerate(feed.entry):
+            if entry.name:
+                for email in entry.email:
+                    if email.address.find('@gmail.com') != -1:
+                        if email.address in ownerToCalendars and email.address != users.get_current_user().email():
+                            contacts.append({'name':entry.name.full_name.text, 'email':email.address})
+                
         user = users.get_current_user()
         
         email1 = user.email()
-        emailList = friends
+        emailList = contacts
         
         start_time_date = textDateTimeToDateTime(startTime)
         end_time_date = textDateTimeToDateTime(endTime)
