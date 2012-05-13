@@ -57,11 +57,16 @@
 						</div>
 					</div>
 					<div id="tabs-2">
-						First, select some friends on the left. Now:<br />
-						I want to schedule an event some time between the hours of <input type="text"  value="" class="timePicker" id="timesStartTime" />
-						and <input type="text" value="" class="timePicker" id="timesEndTime" />. I want this event to occur on 
-						<input type="text" value="" class="datePicker" id="timesStartDate" /> or within the 					
-						<input type="text" value="14" id="timesDateDuration" /> days following that. The event will last (hours: minutes) <input type="text" class="timeDurationPicker" id="timesDuration" />.
+						First, select some friends on the left. Now fill in your event details:<br />
+						Earliest start time:<input type="text"  value="" class="timePicker" id="timesStartTime" />
+						<br />
+						Latest end time:<input type="text" value="" class="timePicker" id="timesEndTime" />
+						<br />
+						Earliest start date:<input type="text" value="" class="datePicker" id="timesStartDate" />
+						<br />				
+						...or within the <input type="text" value="14" id="timesDateDuration" /> days following that.
+						<br />
+						Event duration (hours:minutes):<input type="text" class="timeDurationPicker" id="timesDuration" />
 						<br />
 						<input type="submit" id="findTimesButton" value="Go" />
 						<div id="findTimesOutsideDiv" class="funcOutsideDiv">

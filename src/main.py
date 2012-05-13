@@ -482,7 +482,7 @@ class RegistrationHandler(webapp.RequestHandler):
             if user.email() not in ownerToCalendars:
                 ownerToCalendars[user.email()] = []
             calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
-            calendarClients[users.get_current_user().email()] = calendar_client
+            calendarClients[user.email()] = calendar_client
             # if we don't have an access token already, get a request token
             request_token = calendar_client.GetOAuthToken(
                 ['http://www.google.com/calendar/feeds'],
@@ -491,7 +491,8 @@ class RegistrationHandler(webapp.RequestHandler):
                 CONSUMER_SECRET2)
             
             # save the token
-            gdata.gauth.AeSave(request_token, 'myCalendarKey')
+#            gdata.gauth.AeSave(request_token, 'myCalendarKey')
+            gdata.gauth.AeSave(request_token, 'calendarKey_' + user.email())
             
             self.redirect(str(request_token.generate_authorization_url()))
             
@@ -554,7 +555,8 @@ class MainHandler(webapp.RequestHandler):
                         CONSUMER_SECRET)
                 
                     # save the token
-                    gdata.gauth.AeSave(request_token, 'myContactsKey')
+#                    gdata.gauth.AeSave(request_token, 'myContactsKey')
+                    gdata.gauth.AeSave(request_token, 'contactsKey_' + user.email())
                     
                     self.redirect(str(request_token.generate_authorization_url()))
         else:
@@ -605,7 +607,8 @@ class CalendarHandler(webapp.RequestHandler):
                 CONSUMER_SECRET)
             
             # save the token
-            gdata.gauth.AeSave(request_token, 'myCalendarKey')
+#            gdata.gauth.AeSave(request_token, 'myCalendarKey')
+            gdata.gauth.AeSave(request_token, 'calendarKey_' + user.email())
             
             self.redirect(str(request_token.generate_authorization_url()))
 
@@ -641,15 +644,20 @@ class ApiHandler(webapp.RequestHandler):
                 CONSUMER_SECRET)
             
             # save the token
-            gdata.gauth.AeSave(request_token, 'myContactsKey')
+#            gdata.gauth.AeSave(request_token, 'myContactsKey')
+            gdata.gauth.AeSave(request_token, 'contactsKey_' + user.email())
             
             self.redirect(str(request_token.generate_authorization_url()))
             
 class OAuthCalendarHandler(webapp.RequestHandler):
     def get(self):
+        user = users.get_current_user()
         # recall the request token
-        saved_request_token = gdata.gauth.AeLoad('myCalendarKey')
-        gdata.gauth.AeDelete('myCalendarKey')
+        calendarKeyKey = 'calendarKey_' + user.email()
+#        saved_request_token = gdata.gauth.AeLoad('myCalendarKey')
+        saved_request_token = gdata.gauth.AeLoad(calendarKeyKey)
+#        gdata.gauth.AeDelete('myCalendarKey')
+        gdata.gauth.AeDelete(calendarKeyKey)
         # get client
         logging.info(calendarClients)
         client = calendarClients[users.get_current_user().email()]
@@ -665,9 +673,13 @@ class OAuthCalendarHandler(webapp.RequestHandler):
 
 class OAuthHandler(webapp.RequestHandler):
     def get(self):
+        user = users.get_current_user()
         # recall the request token
-        saved_request_token = gdata.gauth.AeLoad('myContactsKey')
-        gdata.gauth.AeDelete('myContactsKey')
+        contactsKeyKey = 'contactsKey_' + user.email()
+#        saved_request_token = gdata.gauth.AeLoad('myContactsKey')
+        saved_request_token = gdata.gauth.AeLoad(contactsKeyKey)
+#        gdata.gauth.AeDelete('myContactsKey')
+        gdata.gauth.AeDelete(contactsKeyKey)
         # get client
         client = contactsClients[users.get_current_user().email()]
 
@@ -963,6 +975,12 @@ class ResetHandler(webapp.RequestHandler):
         timeZones = {} # string owner email address --> time zone (integer -12 to 12, representing how many hours ahead or behind he is)
 
         self.response.out.write('Reset successful')
+        
+class TestHandler(webapp.RequestHandler):
+    def get(self):
+        self.response.out.write(ownerToCalendars)
+    def post(self):
+        pass
                 
 application = webapp.WSGIApplication(
     [('/', MainHandler),
@@ -977,7 +995,8 @@ application = webapp.WSGIApplication(
      ('/findCommonTimes', FindCommonTimesHandler),
      ('/findEvents', FindEventsHandler),
      ('/scheduleAnEvent', ScheduleAnEventHandler),
-     ('/reset', ResetHandler)],
+     ('/reset', ResetHandler),
+     ('/test', TestHandler)],
     debug=True)
 
 def main():
