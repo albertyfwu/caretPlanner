@@ -21,6 +21,8 @@ runningLocally = True
 # of caretPlanner
 # if False, runningLocally uses caretPlanner and associated key
 
+debugList = []
+
 if runningLocally == True:
     CONSUMER_KEY = '645332541228-79g5u7m0fpm6tu07t4na6nlbspi7jq2j.apps.googleusercontent.com'
     CONSUMER_SECRET = 'zN721xIL8yNRa4SKUFwKNp6b'
@@ -30,6 +32,8 @@ if runningLocally == True:
     clientCallbackUrl = 'http://localhost:8080/oauth2callback'
     
 else:
+#    from google.appengine.api import background_thread
+    
     CONSUMER_KEY ='645332541228.apps.googleusercontent.com'
     CONSUMER_SECRET = 'yNEKd0Dzp6LO9O4biURGotpZ'    
     CONSUMER_KEY2 = '645332541228-k6r9qt7esbhvsmts3rk1cqakrai2jvq1.apps.googleusercontent.com'
@@ -454,6 +458,16 @@ def scheduleEvent(calClient, calId, eventName, eventStart, eventEnd, contactsLis
 class RegistrationHandler(webapp.RequestHandler):
     def get(self):
         user = users.get_current_user()
+        
+        # start test code here
+#        def f(arg1, arg2, *kwargs):
+#            debugList.append(arg1)
+#            debugList.append(arg2)
+#        
+#        t = background_thread.BackgroundThread(target=f, args=['foo', 'bar'])
+#        t.start()
+        # end test code here
+        
         if calendarClients.has_key(user.email()):
             # Add time zone
             timeZones[user.email()] = defaultTZ
@@ -468,8 +482,6 @@ class RegistrationHandler(webapp.RequestHandler):
             calurl = {}
             for i, a_calendar in enumerate(feed.entry):
                 calurl[a_calendar.content.src] = a_calendar.color.value
-#            calurl=[a_calendar.content.src for i, a_calendar in enumerate(feed.entry)]
-#            calcolor=[a_calendar.color for i, a_calendar in enumerate(feed.entry)]
             for url in calurl:
                 urlSplitList = url.split("/")
                 cal_id = urlSplitList[5]
@@ -509,7 +521,7 @@ class MainHandler(webapp.RequestHandler):
                 path = os.path.join(os.path.dirname(__file__), 'registration.html')
                 self.response.out.write(template.render(path, {}))
             else: ## if user already registered
-                if contactsClients.has_key(users.get_current_user().email()): # if a contacts client is already available for current user
+                if contactsClients.has_key(user.email()): # if a contacts client is already available for current user
                     # use contact client that's available
                         for key in ownerToCalendars.keys():
                             logging.info(key)
@@ -580,74 +592,6 @@ class ScheduleEventHandler(webapp.RequestHandler):
             "2/20 4:45PM - 6:15PM"
         # end do stuff with these contacts
         self.response.out.write(result)
-
-class CalendarHandler(webapp.RequestHandler):
-    def get(self):
-        if calendarClients.has_key(users.get_current_user().email()):
-            calendar_client = calendarClients[users.get_current_user().email()]
-            query = gdata.calendar.client.CalendarEventQuery()
-            query.max_results = 100000
-            
-            feed = calendar_client.GetAllCalendarsFeed(q = query)
-            result = 'Printing all calendars: %s' % feed.title.text
-            
-            for i, a_calendar in zip(xrange(len(feed.entry)), feed.entry):
-                result += '\t%s. %s' % (i, a_calendar.get_id())
-            
-            self.response.out.write(result)
-            
-        else:
-            calendar_client = gdata.calendar.client.CalendarClient(source='caretPlanner')
-            calendarClients[users.get_current_user().email()] = calendar_client
-            # if we don't have an access token already, get a request token
-            request_token = calendar_client.GetOAuthToken(
-                ['http://www.google.com/calendar/feeds'],
-                calendarCallbackUrl,
-                CONSUMER_KEY,
-                CONSUMER_SECRET)
-            
-            # save the token
-#            gdata.gauth.AeSave(request_token, 'myCalendarKey')
-            gdata.gauth.AeSave(request_token, 'calendarKey_' + user.email())
-            
-            self.redirect(str(request_token.generate_authorization_url()))
-
-
-class ApiHandler(webapp.RequestHandler):
-    def get(self):
-#        self.response.out.write('temporarily disabled')
-        # do we already have an access token?
-        if contactsClients.has_key(users.get_current_user().email()):
-            contacts_client = contactsClients[users.get_current_user().email()]
-            query = gdata.contacts.client.ContactsQuery()
-            query.max_results = 100000
-            feed = contacts_client.GetContacts(q = query)
-            result = ''
-            
-            for i, entry in enumerate(feed.entry):
-                if entry.name:
-                    result += entry.name.full_name.text + ':'
-                    for email in entry.email:
-                        if email.primary and email.primary == 'true':
-                            result += '     ' + email.address
-                    result += '<br />'
-    
-            self.response.out.write(result)
-        else:
-            contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
-            contactsClients[users.get_current_user().email()] = contacts_client
-            # if we don't have an access token already, get a request token
-            request_token = contacts_client.GetOAuthToken(
-                ['https://www.google.com/m8/feeds'],
-                clientCallbackUrl,
-                CONSUMER_KEY,
-                CONSUMER_SECRET)
-            
-            # save the token
-#            gdata.gauth.AeSave(request_token, 'myContactsKey')
-            gdata.gauth.AeSave(request_token, 'contactsKey_' + user.email())
-            
-            self.redirect(str(request_token.generate_authorization_url()))
             
 class OAuthCalendarHandler(webapp.RequestHandler):
     def get(self):
@@ -978,16 +922,17 @@ class ResetHandler(webapp.RequestHandler):
         
 class TestHandler(webapp.RequestHandler):
     def get(self):
-        self.response.out.write(ownerToCalendars)
+        debugList.append(contactsClients)
+        debugList.append(calendarClients)
+        debugList.append(ownerToCalendars)
+        self.response.out.write(debugList)
     def post(self):
         pass
                 
 application = webapp.WSGIApplication(
     [('/', MainHandler),
      ('/about', AboutHandler),
-     ('/api', ApiHandler),
      ('/scheduleEvent', ScheduleEventHandler),
-     ('/calendar', CalendarHandler),
      ('/registration', RegistrationHandler),
      ('/oauth2callback.*', OAuthHandler),
      ('/oauth2calendarcallback.*', OAuthCalendarHandler),
