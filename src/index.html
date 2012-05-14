@@ -320,7 +320,7 @@
 				
 				$.post('/findEvents', {jsonData: JSON.stringify(query)}, function(data) {
 					var html = "Results:<table id='findEventsSearchResultsTable' class='resultsTable' width='100%'>";
-					html += '<thead><tr><th>Name</th><th>Owner</th><th>Start</th><th>End</th></tr></thead><tbody>';
+					html += '<thead><tr><th>Name</th><th>Person</th><th>Start</th><th>End</th></tr></thead><tbody>';
 					for(var i = 0; i < data.length; i++) {
 						var event = data[i];
 						html += '<tr>';

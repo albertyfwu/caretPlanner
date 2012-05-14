@@ -468,7 +468,7 @@ class RegistrationHandler(webapp.RequestHandler):
 #        t.start()
         # end test code here
         
-        if calendarClients.has_key(user.email()):
+        if user.email() in calendarClients:
             # Add time zone
             timeZones[user.email()] = defaultTZ
             
@@ -511,8 +511,8 @@ class RegistrationHandler(webapp.RequestHandler):
 ### this gets called when running main
 class MainHandler(webapp.RequestHandler):
     def get(self):
-        for key in ownerToCalendars.keys():
-            logging.info(key)
+#        for key in ownerToCalendars.keys():
+#            logging.info(key)
             
         user = users.get_current_user()        
         if user: # if logged in
@@ -521,12 +521,12 @@ class MainHandler(webapp.RequestHandler):
                 path = os.path.join(os.path.dirname(__file__), 'registration.html')
                 self.response.out.write(template.render(path, {}))
             else: ## if user already registered
-                if contactsClients.has_key(user.email()): # if a contacts client is already available for current user
+                if user.email() in contactsClients: # if a contacts client is already available for current user
                     # use contact client that's available
-                        for key in ownerToCalendars.keys():
-                            logging.info(key)
+#                        for key in ownerToCalendars.keys():
+#                            logging.info(key)
                         contacts = []
-                        contacts_client = contactsClients[users.get_current_user().email()]
+                        contacts_client = contactsClients[user.email()]
                         query = gdata.contacts.client.ContactsQuery()
                         query.max_results = 100000
                         feed = contacts_client.GetContacts(q = query)
@@ -535,14 +535,14 @@ class MainHandler(webapp.RequestHandler):
                             if entry.name:
                                 for email in entry.email:
                                     if email.address.find('@gmail.com') != -1:
-                                        if email.address in ownerToCalendars and email.address != users.get_current_user().email():
+                                        if email.address in ownerToCalendars and email.address != user.email():
                                             contacts.append({'name':entry.name.full_name.text, 'email':email.address})
                         
                         contacts.sort(key = lambda x: x['name'])
                         contactsLen = len(contacts)
                         
                         calendarsString = ''
-                        for calendar in ownerToCalendars[users.get_current_user().email()]:
+                        for calendar in ownerToCalendars[user.email()]:
                             calendarsString += 'src=' + calendar + '&color=%23' + calIdToColor[calendar][1:] + '&'
                 
                         template_values = {
@@ -556,9 +556,9 @@ class MainHandler(webapp.RequestHandler):
                         self.response.out.write(template.render(path, template_values))
                     
                 else:
-                    logging.info("need contacts client")
+#                    logging.info("need contacts client")
                     contacts_client = gdata.contacts.client.ContactsClient(source='caretPlanner')
-                    contactsClients[users.get_current_user().email()] = contacts_client
+                    contactsClients[user.email()] = contacts_client
                     # if we don't have an access token already, get a request token
                     request_token = contacts_client.GetOAuthToken(
                         ['https://www.google.com/m8/feeds'],
@@ -603,8 +603,8 @@ class OAuthCalendarHandler(webapp.RequestHandler):
 #        gdata.gauth.AeDelete('myCalendarKey')
         gdata.gauth.AeDelete(calendarKeyKey)
         # get client
-        logging.info(calendarClients)
-        client = calendarClients[users.get_current_user().email()]
+#        logging.info(calendarClients)
+        client = calendarClients[user.email()]
 
         request_token = gdata.gauth.AuthorizeRequestToken(saved_request_token, self.request.uri)
         # turn this into an access token
@@ -625,7 +625,7 @@ class OAuthHandler(webapp.RequestHandler):
 #        gdata.gauth.AeDelete('myContactsKey')
         gdata.gauth.AeDelete(contactsKeyKey)
         # get client
-        client = contactsClients[users.get_current_user().email()]
+        client = contactsClients[user.email()]
 
         request_token = gdata.gauth.AuthorizeRequestToken(saved_request_token, self.request.uri)
         # turn this into an access token
@@ -640,10 +640,11 @@ class SignOutHandler(webapp.RequestHandler):
     def get(self):
         pass
     def post(self):
-        if users.get_current_user().email() in contactsClients:
-            del contactsClients[users.get_current_user().email()]
-        if users.get_current_user().email() in calendarClients:
-            del calendarClients[users.get_current_user().email()]
+        user = users.get_current_user()
+        if user in contactsClients:
+            del contactsClients[user.email()]
+        if user in calendarClients:
+            del calendarClients[user.email()]
 
 # takes a string datetime like '08/20/2012 06:52 pm' and converts it into RFC format
 def textDateTimeToRfc(stringDate):
@@ -700,9 +701,7 @@ def rfcToDateTimeText(rfc):
     # ignore seconds
     
     length = len(rfc)
-    if rfc[length-1] == 'z' or rfc[length-1] == 'Z':
-        logging.info('z')
-    else:
+    if rfc[length-1] != 'z' and rfc[length-1] != 'Z':
         hour = (hour - int(float(rfc[length-6:length-3]))) % 24
     if hour >= 12:
         hourText = str(hour - 12).zfill(2)
@@ -753,11 +752,11 @@ class FindCommonEventsHandler(webapp.RequestHandler):
             commonEvent['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(commonEvent['startTime']), timeZones[users.get_current_user().email()])))
             commonEvent['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(commonEvent['endTime']), timeZones[users.get_current_user().email()])))
         
-        logging.info('what is the user')
-        logging.info(user)
-        
-        logging.info('what are the events')
-        logging.info(commonEvents)
+#        logging.info('what is the user')
+#        logging.info(user)
+#        
+#        logging.info('what are the events')
+#        logging.info(commonEvents)
         
         
         self.response.headers['Content-Type'] = 'application/json'
@@ -859,8 +858,8 @@ class FindEventsHandler(webapp.RequestHandler):
         rfcStartTime = rfc3339(tzToGMT(start_time_date, timeZones[email1]))
         rfcEndTime = rfc3339(tzToGMT(end_time_date, timeZones[email1]))
         
-        logging.info('contacts')
-        logging.info(contacts)
+#        logging.info('contacts')
+#        logging.info(contacts)
         
         # look at FindCommonEventsHandler's post(self): for an example        
         events = findEventsInContactList(overlordCalClient, emailList, eventQuery, rfcStartTime, rfcEndTime)
@@ -868,11 +867,11 @@ class FindEventsHandler(webapp.RequestHandler):
             event['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['startTime']), timeZones[users.get_current_user().email()])))
             event['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['endTime']), timeZones[users.get_current_user().email()])))
         
-        logging.info('what is the user')
-        logging.info(user)
-        
-        logging.info('what are the events')
-        logging.info(events)
+#        logging.info('what is the user')
+#        logging.info(user)
+#        
+#        logging.info('what are the events')
+#        logging.info(events)
         
         self.response.headers['Content-Type'] = 'application/json'
         result = json.dumps(events)
