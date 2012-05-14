@@ -841,12 +841,16 @@ class FindEventsHandler(webapp.RequestHandler):
         query.max_results = 100000
         feed = contacts_client.GetContacts(q = query)
         
+        emailToFullNameD = {}
+        
         for i, entry in enumerate(feed.entry):
             if entry.name:
                 for email in entry.email:
                     if email.address.find('@gmail.com') != -1:
                         if email.address in ownerToCalendars and email.address != users.get_current_user().email():
                             contacts.append(email.address)
+                            emailToFullNameD[email.address] = entry.name.full_name.text
+                
                 
         user = users.get_current_user()
         
@@ -866,6 +870,7 @@ class FindEventsHandler(webapp.RequestHandler):
         for event in events:            
             event['startTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['startTime']), timeZones[users.get_current_user().email()])))
             event['endTime'] = rfcToDateTimeText(rfc3339(GMTTotz(rfcTodateTime(event['endTime']), timeZones[users.get_current_user().email()])))
+            event['owner'] = emailToFullNameD[event['owner']]
         
 #        logging.info('what is the user')
 #        logging.info(user)
